@@ -518,13 +518,6 @@ img{border-radius:12px}a{color:#b87a5c;font-size:18px;margin-top:16px}p{color:rg
     }
 
     // Memoryd check
-    if (urlPath === "/api/memoryd/check") {
-      const memorydExists = fs.existsSync(path.join(process.env.HOME || "~", "memoryd"));
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ installed: memorydExists }));
-      return;
-    }
-
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   }
