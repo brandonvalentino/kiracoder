@@ -717,7 +717,22 @@ export default function (pi: ExtensionAPI) {
       });
     });
 
-    server.listen(PORT, "0.0.0.0", () => {
+    const tryListen = (port: number, maxAttempts = 10) => {
+      server!.listen(port, "0.0.0.0", () => {
+        onListening(port);
+      });
+      server!.once("error", (err: any) => {
+        if (err.code === "EADDRINUSE" && port < PORT + maxAttempts) {
+          console.log(`[Mirror] Port ${port} in use, trying ${port + 1}...`);
+          server!.removeAllListeners("error");
+          tryListen(port + 1, maxAttempts);
+        } else {
+          console.error(`[Mirror] Failed to start server:`, err.message);
+        }
+      });
+    };
+
+    const onListening = (port: number) => {
       // Get local IP for display
       const nets = require("node:os").networkInterfaces();
       let localIp = "localhost";
@@ -739,7 +754,9 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setWidget("mirror-qr", lines, { placement: "aboveEditor" });
         setTimeout(() => ctx.ui.setWidget("mirror-qr", undefined), 10000);
       }).catch(() => {});
-    });
+    };
+
+    tryListen(PORT);
   });
 
   // ═══════════════════════════════════════
