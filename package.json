@@ -1,0 +1,28 @@
+{
+  "name": "pi-web-ui",
+  "version": "1.0.0",
+  "description": "Web-based chat interface for Pi coding agent",
+  "main": "dist/backend/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc && node dist/backend/server.js",
+    "start": "node dist/backend/server.js",
+    "watch": "tsc --watch",
+    "test": "node test-setup.js",
+    "clean": "rm -rf dist node_modules"
+  },
+  "keywords": ["pi", "coding-agent", "rpc", "chat", "web-ui"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.17",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  }
+}

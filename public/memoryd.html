@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tau — memoryd</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>τ</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="memoryd.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="mode-toggle">
+          <a href="index.html" class="mode-link" title="Chat">τ</a>
+          <a href="memoryd.html" class="mode-link active" title="Memory">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2C8.5 2 5 5.5 5 9.5c0 2 .8 3.8 2 5v3.5a2 2 0 002 2h6a2 2 0 002-2V14.5c1.2-1.2 2-3 2-5C19 5.5 15.5 2 12 2z"/>
+              <path d="M9 21v1M15 21v1M12 2v1"/>
+              <path d="M5 10h1M18 10h1"/>
+              <path d="M8.5 6.5c-1 .5-1.5 1.5-1.5 3M15.5 6.5c1 .5 1.5 1.5 1.5 3"/>
+              <path d="M9 14h6"/>
+              <path d="M10 17h4"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <nav class="memoryd-nav" id="memoryd-nav">
+        <div class="nav-section">
+          <div class="nav-item active" data-panel="overview">Overview</div>
+          <div class="nav-item" data-panel="seeds">Seeds</div>
+          <div class="nav-item" data-panel="semantic">Semantic</div>
+          <div class="nav-item" data-panel="episodic">Episodic</div>
+          <div class="nav-item" data-panel="working">Working</div>
+          <div class="nav-item" data-panel="cards">Session Cards</div>
+          <div class="nav-item" data-panel="processes">Processes</div>
+          <div class="nav-item" data-panel="logs">Logs</div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Area -->
+    <div class="main">
+      <div class="header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+          <h1 id="panel-title">memoryd</h1>
+        </div>
+        <div class="header-right">
+          <button class="settings-btn" id="settings-btn" title="Settings">⚙</button>
+        </div>
+      </div>
+
+      <div class="memoryd-content" id="memoryd-content">
+        <!-- Panels rendered here by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Overlay -->
+  <div class="settings-overlay hidden" id="settings-overlay"></div>
+  <div class="settings-panel hidden" id="settings-panel">
+    <div class="settings-header">
+      <h3>Theme</h3>
+      <button class="settings-close" id="settings-close">✕</button>
+    </div>
+    <div class="theme-grid" id="theme-grid"></div>
+    <button class="shuffle-btn" id="shuffle-btn">🎲 Shuffle</button>
+  </div>
+
+  <script type="module" src="memoryd-app.js"></script>
+</body>
+</html>
