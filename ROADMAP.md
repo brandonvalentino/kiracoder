@@ -34,6 +34,14 @@ Star/favourite conversations from the sidebar. Bookmarked sessions pinned to the
 
 Could extend to bookmarking individual messages within a session too — pin key decisions, useful snippets, important moments.
 
+## Agent Team Awareness
+
+Detect multiple Pi sessions running in tmux (common pattern for parallel agents). Show a `team` tag or grouped section in the sidebar. Could detect via `tmux list-sessions` cross-referenced with running Pi processes — no dependency on any specific extension.
+
+- Visual grouping in sidebar
+- Team status overview (which agents are still working)
+- Bulk actions (kill all, view all)
+
 ## Conversation Fork/Branch Visualization
 
 Pi already has fork support in the RPC. Visualize the conversation as a tree — go back to any point and try a different approach. Like git for conversations.
