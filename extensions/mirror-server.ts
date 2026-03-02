@@ -213,10 +213,12 @@ export default function (pi: ExtensionAPI) {
             if (command.images?.length) {
               const content: any[] = [{ type: "text", text: command.message }];
               for (const img of command.images) {
+                const mimeType = img.mimeType || "image/png";
+                console.log(`[mirror-server] Image: mimeType=${mimeType}, dataLen=${img.data?.length}`);
                 content.push({
                   type: "image",
                   data: img.data,
-                  mimeType: img.mimeType,
+                  mimeType,
                 });
               }
               pi.sendUserMessage(content);
