@@ -4,6 +4,12 @@ A web UI that mirrors your [Pi](https://github.com/badlogic/pi-mono) terminal se
 
 ![Tau dark mode](docs/images/dark.png)
 
+![Tau terracotta theme](docs/images/terracotta.png)
+
+![Settings](docs/images/settings.png)
+
+![Commands](docs/images/commands.png)
+
 ## What it does
 
 Tau connects to your running Pi TUI and gives you a second view in the browser. Same session, same messages, same tools — just a different screen. Type in the terminal or the browser, both stay in sync.
