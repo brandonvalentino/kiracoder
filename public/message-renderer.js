@@ -103,7 +103,7 @@ export class MessageRenderer {
     return `<div class="thinking-block">
 <div class="thinking-toggle" onclick="var c=document.getElementById('${id}');c.classList.toggle('expanded');this.classList.toggle('expanded')">
 <span class="chevron">▶</span>
-<span>💭 Thinking...</span>
+<span class="thinking-label">⟡ Thinking</span>
 </div>
 <div class="thinking-content" id="${id}">${this.escapeHtml(thinking)}</div>
 </div>`;
@@ -119,7 +119,7 @@ export class MessageRenderer {
       thinkingDiv.innerHTML = `
         <div class="thinking-toggle expanded" onclick="var c=this.nextElementSibling;c.classList.toggle('expanded');this.classList.toggle('expanded')">
           <span class="chevron">▶</span>
-          <span>💭 Thinking...</span>
+          <span class="thinking-label">⟡ Thinking</span>
         </div>
         <div class="thinking-content expanded"></div>`;
       contentDiv.prepend(thinkingDiv);
