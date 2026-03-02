@@ -215,7 +215,8 @@ export default function (pi: ExtensionAPI) {
               for (const img of command.images) {
                 content.push({
                   type: "image",
-                  source: { type: "base64", mediaType: img.mimeType, data: img.data },
+                  data: img.data,
+                  mimeType: img.mimeType,
                 });
               }
               pi.sendUserMessage(content);
