@@ -324,12 +324,11 @@ body {
   cursor: pointer;
   user-select: none;
   transition: all var(--duration) var(--ease);
-  border-top: 1px solid var(--border);
+  border-top: none;
 }
 
 .project-group:first-child .project-header {
   margin-top: 0;
-  border-top: none;
 }
 
 .project-header:hover { color: var(--text-primary); }
