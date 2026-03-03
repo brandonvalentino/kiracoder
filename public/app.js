@@ -62,6 +62,7 @@ let lastUsage = null; // Full usage object for context visualiser
 let mirrorActiveSessionFile = null; // The live session file path from the TUI
 let viewingActiveSession = true; // Whether we're viewing the live session or a historical one
 let isMirrorMode = false; // Set when mirror_sync received
+let liveInstances = []; // All running Tau instances [{port, sessionFile, cwd}]
 
 // File browser
 const fileSidebar = document.getElementById('file-sidebar');
@@ -1095,9 +1096,24 @@ async function switchSession(sessionFile, session = null, project = null) {
       messageRenderer.renderWelcome();
     }
 
-    // In mirror mode, don't actually switch the Pi process
+    // In mirror mode, check if this session is live on any instance
     if (isMirrorMode) {
-      // Check if this is the active session
+      // Check if this session is live on a different instance
+      const otherInstance = liveInstances.find(i => i.sessionFile === sessionFile && i.port !== new URL(wsClient.url).port * 1);
+      if (otherInstance) {
+        // Reconnect to the other instance
+        const newUrl = `ws://${location.hostname}:${otherInstance.port}/ws`;
+        console.log(`[App] Switching to instance on port ${otherInstance.port}`);
+        wsClient.disconnect();
+        wsClient.url = newUrl;
+        wsClient.forceReconnect();
+        mirrorActiveSessionFile = sessionFile;
+        viewingActiveSession = true;
+        updateMirrorInputState();
+        return;
+      }
+
+      // Check if this is the active session on the current instance
       viewingActiveSession = sessionFile === mirrorActiveSessionFile;
       updateMirrorInputState();
 
@@ -1167,12 +1183,32 @@ function handleMirrorSync(data) {
   updateTokenUsage();
 }
 
-// Mark the live session in the sidebar with a green dot
+// Mark all live sessions in the sidebar with a green dot
 function updateMirrorLiveIndicator() {
+  const liveFiles = new Set(liveInstances.map(i => i.sessionFile));
+  // Also include the current mirror session
+  if (mirrorActiveSessionFile) liveFiles.add(mirrorActiveSessionFile);
+
   document.querySelectorAll('.session-item').forEach(el => {
-    el.classList.toggle('mirror-live', el.dataset.filePath === mirrorActiveSessionFile);
+    el.classList.toggle('mirror-live', liveFiles.has(el.dataset.filePath));
   });
 }
+
+// Poll for running instances to mark all live sessions
+async function pollInstances() {
+  try {
+    const res = await fetch('/api/instances');
+    if (res.ok) {
+      const data = await res.json();
+      liveInstances = data.instances || [];
+      updateMirrorLiveIndicator();
+    }
+  } catch {}
+}
+
+// Poll every 5 seconds
+setInterval(pollInstances, 5000);
+pollInstances();
 
 // Enable/disable input based on whether we're viewing the live session
 function updateMirrorInputState() {

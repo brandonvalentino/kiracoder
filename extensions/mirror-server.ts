@@ -21,6 +21,48 @@ const PORT = parseInt(process.env.TAU_MIRROR_PORT || "3001");
 // @ts-ignore — __dirname is provided by jiti at runtime
 const STATIC_DIR = process.env.TAU_STATIC_DIR || path.resolve(process.cwd(), "public");
 const SESSIONS_DIR = path.join(process.env.HOME || "~", ".pi/agent/sessions");
+const INSTANCES_DIR = path.join(process.env.HOME || "~", ".pi/tau-instances");
+
+// Instance registry — tracks all running Tau servers
+function registerInstance(port: number, sessionFile: string, cwd: string) {
+  fs.mkdirSync(INSTANCES_DIR, { recursive: true });
+  const info = { port, pid: process.pid, sessionFile, cwd, startedAt: new Date().toISOString() };
+  fs.writeFileSync(path.join(INSTANCES_DIR, `${process.pid}.json`), JSON.stringify(info));
+}
+
+function updateInstanceSession(sessionFile: string) {
+  const file = path.join(INSTANCES_DIR, `${process.pid}.json`);
+  if (!fs.existsSync(file)) return;
+  try {
+    const info = JSON.parse(fs.readFileSync(file, "utf8"));
+    info.sessionFile = sessionFile;
+    fs.writeFileSync(file, JSON.stringify(info));
+  } catch {}
+}
+
+function unregisterInstance() {
+  try { fs.unlinkSync(path.join(INSTANCES_DIR, `${process.pid}.json`)); } catch {}
+}
+
+function getRunningInstances(): Array<{ port: number; pid: number; sessionFile: string; cwd: string }> {
+  if (!fs.existsSync(INSTANCES_DIR)) return [];
+  const instances: any[] = [];
+  for (const file of fs.readdirSync(INSTANCES_DIR)) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const info = JSON.parse(fs.readFileSync(path.join(INSTANCES_DIR, file), "utf8"));
+      // Check if process is still alive
+      try {
+        process.kill(info.pid, 0);
+        instances.push(info);
+      } catch {
+        // Process dead — clean up stale file
+        try { fs.unlinkSync(path.join(INSTANCES_DIR, file)); } catch {}
+      }
+    } catch {}
+  }
+  return instances;
+}
 
 // MIME types for static file serving
 const MIME_TYPES: Record<string, string> = {
@@ -136,6 +178,8 @@ export default function (pi: ExtensionAPI) {
     turnCount = 0;
     titleSet = false;
     userMessages = [];
+    // Update instance registry with new session file
+    updateInstanceSession(ctx.sessionManager.getSessionFile() || "");
   });
 
   pi.on("turn_start", async (_event, _ctx) => {
@@ -632,6 +676,12 @@ img{border-radius:12px}a{color:#b87a5c;font-size:18px;margin-top:16px}p{color:rg
     if (urlPath === "/api/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok", mode: "mirror", mirrorUrl, tailscaleUrl: tailscaleUrl || undefined }));
+      return;
+    }
+
+    if (urlPath === "/api/instances") {
+      res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+      res.end(JSON.stringify({ instances: getRunningInstances() }));
       return;
     }
 
@@ -1200,10 +1250,14 @@ img{border-radius:12px}a{color:#b87a5c;font-size:18px;margin-top:16px}p{color:rg
         if (tailscaleIp) break;
       }
 
-      mirrorUrl = `http://${localIp}:${PORT}`;
-      tailscaleUrl = tailscaleIp ? `http://${tailscaleIp}:${PORT}` : "";
+      mirrorUrl = `http://${localIp}:${port}`;
+      tailscaleUrl = tailscaleIp ? `http://${tailscaleIp}:${port}` : "";
       console.log(`[Mirror] Tau mirror server running on ${mirrorUrl}${tailscaleUrl ? `  •  Tailscale: ${tailscaleUrl}` : ""}`);
-      ctx.ui.setStatus("mirror", `Mirror: ${localIp}:${PORT}${tailscaleIp ? ` • TS: ${tailscaleIp}:${PORT}` : ""}`);
+      ctx.ui.setStatus("mirror", `Mirror: ${localIp}:${port}${tailscaleIp ? ` • TS: ${tailscaleIp}:${port}` : ""}`);
+
+      // Register this instance
+      const sessionFile = ctx.sessionManager.getSessionFile() || "";
+      registerInstance(port, sessionFile, ctx.cwd || process.cwd());
 
       ctx.ui.notify(`Tau mirror: ${mirrorUrl}${tailscaleUrl ? `  •  Tailscale: ${tailscaleUrl}` : ""}  •  /qr for QR code`, "info");
     };
@@ -1227,6 +1281,7 @@ img{border-radius:12px}a{color:#b87a5c;font-size:18px;margin-top:16px}p{color:rg
       server.close();
       server = null;
     }
+    unregisterInstance();
     console.log("[Mirror] Server shut down");
   });
 }
