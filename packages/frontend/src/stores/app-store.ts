@@ -183,14 +183,22 @@ export const useAppStore = create<AppStore>()((set, get) => ({
 
   async promptWorkspace(workspaceId, message) {
     // Subscription is already active from the route effect — don't re-subscribe.
-    set({
+    // Optimistically append the user message so it's visible immediately.
+    set((state) => ({
       isStreaming: true,
       streamingWorkspaceId: workspaceId,
       // rerender-functional-setstate: reset streaming state directly here
       // instead of reading stale closure values.
       streamingState: { text: "", thinking: "" },
       statusText: "Sending…",
-    });
+      messagesByWorkspace: {
+        ...state.messagesByWorkspace,
+        [workspaceId]: [
+          ...(state.messagesByWorkspace[workspaceId] ?? []),
+          { role: "user", content: message },
+        ],
+      },
+    }));
     try {
       await client.workspaces.prompt.mutate({ message, workspaceId });
       // agent_end event also calls loadMessages, but this is a safety net
