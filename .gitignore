@@ -6,3 +6,5 @@ node_modules/
 
 # Pi session exports
 pi-session-*.html
+.agents/
+skills-lock.json
