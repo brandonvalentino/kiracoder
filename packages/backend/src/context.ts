@@ -5,6 +5,8 @@ import { createRuntimeManager } from "@kiracode/session-runtime";
 import { createProjectService } from "./services/project-service.ts";
 import { createWorkspaceService } from "./services/workspace-service.ts";
 
+export type AppContext = ReturnType<typeof createAppContext>;
+
 export function createAppContext() {
   const appRootDir = getAppRootDir();
   const sessionsDir = getSessionsDir();
