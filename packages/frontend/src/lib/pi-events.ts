@@ -57,6 +57,41 @@ export type ToolExecution = {
   output: string;
 };
 
+/** A tool result message as stored in session.messages by the Pi SDK. */
+export type ToolResultMessage = {
+  role: "toolResult";
+  toolCallId: string;
+  toolName: string;
+  content: Array<{ type: string; text?: string }>;
+  isError: boolean;
+};
+
+/** A tool call content block inside an assistant message. */
+export type ToolCallBlock = {
+  type: "toolCall";
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+};
+
+/** Build a ToolExecution from a toolCall block and its optional result. */
+export function toolExecutionFromHistory(
+  block: ToolCallBlock,
+  result: ToolResultMessage | undefined,
+): ToolExecution {
+  return {
+    toolCallId: block.id,
+    toolName: block.name,
+    args: block.arguments,
+    status: result ? (result.isError ? "error" : "complete") : "pending",
+    output: result
+      ? result.content
+          .map((c) => (c.type === "text" ? (c.text ?? "") : JSON.stringify(c)))
+          .join("\n")
+      : "",
+  };
+}
+
 export function parsePiEvent(raw: unknown): PiEvent | null {
   if (!raw || typeof raw !== "object") return null;
   const ev = raw as Record<string, unknown>;

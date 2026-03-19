@@ -1,11 +1,10 @@
 /**
- * Lightweight markdown renderer — ported from Tau legacy.
- * No dependencies. Returns an HTML string for dangerouslySetInnerHTML.
- * Handles: headings, bold, italic, inline code, fenced code blocks,
- * links, lists, blockquotes, horizontal rules, tables, task lists, images.
+ * Minimal markdown helpers for non-assistant content (user bubbles).
+ * Assistant message rendering is handled by Streamdown.
  */
 
-export function renderMarkdown(text: string): string {
+/** @deprecated — kept for reference only; use Streamdown for assistant messages */
+function renderMarkdown(text: string): string {
   if (!text) return "";
 
   text = text.replace(/\r\n/g, "\n");

@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Allow Tailwind to scan Streamdown's dist for utility classes */
+@source "../../../../node_modules/streamdown/dist/*.js";
+
 /* ═══════════════════════════════════════════════════════
    Tau design tokens — KiraCode dark (night) theme
    ═══════════════════════════════════════════════════════ */
@@ -83,6 +86,8 @@
   --color-border: var(--border);
   --color-muted: var(--bg-glass);
   --color-muted-foreground: var(--text-secondary);
+  /* Streamdown uses bg-sidebar for code block containers */
+  --color-sidebar: var(--sidebar-bg);
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius);
@@ -948,68 +953,46 @@
 
   /* ── Code blocks ───────────────────────────────── */
 
-  .code-block-wrapper {
-    position: relative;
-    margin: 8px 0;
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(12px);
+  /* ── Streamdown code block overrides ──────────────────────
+     Streamdown's default layout has 64px of dead space before
+     code text (p-2 container + h-8 header + gap-2 + p-4 body).
+     We compact it to ~38px while keeping the floating action
+     buttons visually aligned.
+     ─────────────────────────────────────────────────────── */
+
+  /* 1. Minimal shell padding — keep gap-2 (8px) intact.
+        The gap + header height must equal the actions' -mt-10 (-40px):
+        32px header + 8px gap = 40px. Removing the gap breaks that.
+        Top/right padding gives the floating icons breathing room. */
+  [data-streamdown="code-block"] {
+    padding: 6px 6px 0 0 !important;
   }
 
-  .code-block-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 12px;
-    background: var(--bg-glass);
-    border-bottom: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--text-dim);
-    font-family: "SF Mono", "Menlo", "Monaco", monospace;
+  /* 2. Body: transparent bg, trim padding from 16px → 12px */
+  [data-streamdown="code-block-body"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 12px !important;
   }
 
-  .copy-btn {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    transition: all var(--duration) var(--ease);
-    font-family: inherit;
-  }
-
-  .copy-btn:hover {
-    background: var(--bg-glass-hover);
-    color: var(--text-secondary);
-  }
-  .copy-btn.copied {
-    color: var(--success);
-  }
-
-  pre {
-    background: transparent;
-    padding: 12px;
-    overflow-x: auto;
-    font-family: "SF Mono", "Menlo", "Monaco", monospace;
-    font-size: 12px;
-    line-height: 1.6;
+  [data-streamdown="code-block-body"] pre {
+    background: transparent !important;
     margin: 0;
-    border: none;
   }
 
+  /* 4. Strip inline-code pill styles from code inside blocks.
+        !important beats Tailwind @layer utilities. */
+  [data-streamdown="code-block-body"] code,
   pre code {
-    background: none;
-    padding: 0;
-    border-radius: 0;
-    font-size: inherit;
-    color: var(--text-primary);
-    border: none;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    font-size: inherit !important;
+    color: var(--text-primary) !important;
   }
 
+  /* Inline code pill */
   code {
     background: var(--bg-glass-strong);
     border: 1px solid var(--border);
@@ -1020,13 +1003,26 @@
     color: var(--accent-text);
   }
 
+  /* Raw <pre> tags (literal HTML in markdown, not Streamdown code blocks) */
+  pre {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 12px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Menlo", "Monaco", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 8px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
   /* ── Thinking blocks ───────────────────────────── */
 
   .thinking-block {
     background: var(--thinking-bg);
     border: 1px solid var(--border);
     padding: 0;
-    margin: 2px 0;
+    margin: 0 0 10px;
     border-radius: var(--radius);
     font-size: 13px;
     color: var(--text-secondary);

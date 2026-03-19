@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useAppStore } from "@/stores/app-store";
 import { UserMessage, AssistantMessage, StreamingAssistantMessage } from "./message-bubble";
 import { ToolCard } from "./tool-card";
 import { ChatInput } from "./chat-input";
 import type { AgentMessage } from "@/stores/app-store";
+import type { ToolResultMessage } from "@/lib/pi-events";
 
 // rerender-memo-with-default-value: stable module-level constants so the
 // selectors below never return a new reference when the workspace has no data.
@@ -70,6 +71,19 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   // re-renders — it's a transient flag used only inside scroll callbacks.
   const isNearBottom = useRef(true);
 
+  // Build a map of toolCallId → toolResult message so AssistantMessage can
+  // pair each toolCall block with its result without a second pass.
+  const toolResultMap = useMemo(() => {
+    const map: Record<string, ToolResultMessage> = {};
+    for (const msg of messages) {
+      const m = msg as unknown as ToolResultMessage;
+      if (m.role === "toolResult" && m.toolCallId) {
+        map[m.toolCallId] = m;
+      }
+    }
+    return map;
+  }, [messages]);
+
   // client-passive-event-listeners: use passive scroll listener.
   useEffect(() => {
     const el = messagesRef.current;
@@ -108,9 +122,10 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
     );
   }
 
-  const activeToolExecutions = Object.values(toolExecutions).filter(
-    (t) => t.status === "pending" || t.status === "streaming",
-  );
+  // Show ALL live tool executions while streaming (not just pending/streaming).
+  // Completed cards stay visible until agent_end fires and historical messages
+  // replace them — this prevents cards from vanishing mid-stream.
+  const liveToolExecutions = Object.values(toolExecutions);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
@@ -118,20 +133,32 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
         {messages.length === 0 && !isThisWorkspaceStreaming ? (
           <Welcome />
         ) : (
-          messages.map((message, i) => {
-            if (message.role === "user") {
-              return <UserMessage isHistory key={i} message={message} />;
-            }
-            if (message.role === "assistant") {
-              return <AssistantMessage isHistory key={i} message={message} />;
-            }
-            return null;
-          })
+          // Filter out toolResult messages — their content is rendered inline
+          // inside the AssistantMessage that owns the corresponding toolCall block.
+          messages
+            .filter((msg) => msg.role !== "toolResult")
+            .map((message, i) => {
+              if (message.role === "user") {
+                return <UserMessage isHistory key={i} message={message} />;
+              }
+              if (message.role === "assistant") {
+                return (
+                  <AssistantMessage
+                    isHistory
+                    key={i}
+                    message={message}
+                    toolResultMap={toolResultMap}
+                  />
+                );
+              }
+              return null;
+            })
         )}
 
-        {/* Live tool cards — only shown while streaming */}
-        {isThisWorkspaceStreaming && activeToolExecutions.length > 0
-          ? activeToolExecutions.map((ex) => <ToolCard execution={ex} key={ex.toolCallId} />)
+        {/* Live tool cards — rendered BEFORE streaming text so live order
+            matches historical order (tool runs, then assistant explains). */}
+        {isThisWorkspaceStreaming && liveToolExecutions.length > 0
+          ? liveToolExecutions.map((ex) => <ToolCard execution={ex} key={ex.toolCallId} />)
           : null}
 
         {/* Streaming message */}
@@ -139,11 +166,12 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
           <StreamingAssistantMessage text={streamingText} thinking={streamingThinking} />
         ) : null}
 
-        {/* Typing indicator — shown while waiting for first token */}
+        {/* Typing indicator — only while waiting for the very first content
+            (no live tool cards active, no text/thinking yet). */}
         {isThisWorkspaceStreaming &&
         !streamingText &&
         !streamingThinking &&
-        activeToolExecutions.length === 0 ? (
+        liveToolExecutions.length === 0 ? (
           <div className="typing-indicator">
             <div className="typing-dot" />
             <div className="typing-dot" />

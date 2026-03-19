@@ -262,7 +262,10 @@ export const useAppStore = create<AppStore>()((set, get) => ({
             case "message_start": {
               const msg = e.message as { role?: string } | undefined;
               if (msg?.role === "assistant") {
-                set({ streamingState: { text: "", thinking: "" } });
+                // Only reset text — preserve thinking so the thinking block stays
+                // visible when the model transitions from thinking → responding.
+                // Thinking is only cleared at agent_start (a new turn).
+                set((state) => ({ streamingState: { ...state.streamingState, text: "" } }));
               }
               break;
             }

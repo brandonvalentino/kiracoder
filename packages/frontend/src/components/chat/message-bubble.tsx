@@ -1,12 +1,17 @@
-import { renderMarkdown, renderUserMarkdown } from "@/lib/markdown";
+import { Streamdown } from "streamdown";
+import { renderUserMarkdown } from "@/lib/markdown";
 import { StreamingThinkingBlock, ThinkingBlock } from "./thinking-block";
 import { ToolCard } from "./tool-card";
-import type { ToolExecution } from "@/lib/pi-events";
+import {
+  toolExecutionFromHistory,
+  type ToolCallBlock,
+  type ToolResultMessage,
+} from "@/lib/pi-events";
 
 type ContentBlock =
   | { type: "text"; text: string }
   | { type: "thinking"; thinking: string }
-  | { type: "toolCall"; id: string; name: string; arguments: Record<string, unknown> }
+  | ToolCallBlock
   | { type: "image"; source?: { data?: string; media_type?: string } }
   | { type: string; [key: string]: unknown };
 
@@ -97,25 +102,42 @@ export function UserMessage({
 // Assistant message (static — from session history)
 export function AssistantMessage({
   message,
-  toolExecutions,
+  toolResultMap,
   isHistory,
 }: {
   message: AgentMessage;
-  toolExecutions?: ToolExecution[];
+  toolResultMap?: Record<string, ToolResultMessage>;
   isHistory?: boolean;
 }) {
   const blocks = extractBlocks(message.content);
+
+  const hasText = blocks.some((b) => b.type === "text");
+  const hasThinking = blocks.some((b) => b.type === "thinking");
+  const hasToolCalls = blocks.some((b) => b.type === "toolCall");
+  const isToolOnly = hasToolCalls && !hasText && !hasThinking;
+
+  const cost = message.usage?.cost?.total;
+
+  // Tool-call-only messages: render cards directly in the flow, no bubble wrapper.
+  if (isToolOnly) {
+    return (
+      <>
+        {blocks
+          .filter((b) => b.type === "toolCall")
+          .map((b) => {
+            const call = b as ToolCallBlock;
+            const ex = toolExecutionFromHistory(call, toolResultMap?.[call.id]);
+            return <ToolCard execution={ex} key={call.id} />;
+          })}
+      </>
+    );
+  }
+
+  // Text / mixed messages: render blocks in order inside the message bubble.
   const textBlocks = blocks.filter((b) => b.type === "text") as Array<{
     type: "text";
     text: string;
   }>;
-  const thinkingBlocks = blocks.filter((b) => b.type === "thinking") as Array<{
-    type: "thinking";
-    thinking: string;
-  }>;
-
-  const html = textBlocks.map((b) => renderMarkdown(b.text)).join("");
-  const cost = message.usage?.cost?.total;
 
   function handleCopy() {
     void navigator.clipboard.writeText(textBlocks.map((b) => b.text).join("\n"));
@@ -124,10 +146,32 @@ export function AssistantMessage({
   return (
     <div className={`message assistant${isHistory ? " history" : ""}`}>
       <div className="message-content">
-        {thinkingBlocks.map((b, i) => (
-          <ThinkingBlock key={i} thinking={b.thinking} />
-        ))}
-        <div dangerouslySetInnerHTML={{ __html: html }} />
+        {blocks.map((b, i) => {
+          if (b.type === "thinking") {
+            return (
+              <ThinkingBlock
+                key={i}
+                thinking={(b as { type: "thinking"; thinking: string }).thinking}
+              />
+            );
+          }
+          if (b.type === "text") {
+            return (
+              <Streamdown
+                key={i}
+                mode="static"
+              >
+                {(b as { type: "text"; text: string }).text}
+              </Streamdown>
+            );
+          }
+          if (b.type === "toolCall") {
+            const call = b as ToolCallBlock;
+            const ex = toolExecutionFromHistory(call, toolResultMap?.[call.id]);
+            return <ToolCard execution={ex} key={call.id} />;
+          }
+          return null;
+        })}
       </div>
       {cost && cost > 0 ? <span className="message-usage">${cost.toFixed(4)}</span> : null}
       <button
@@ -150,22 +194,26 @@ export function AssistantMessage({
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       </button>
-      {toolExecutions && toolExecutions.length > 0
-        ? toolExecutions.map((ex) => <ToolCard execution={ex} key={ex.toolCallId} />)
-        : null}
     </div>
   );
 }
 
-// Streaming assistant message — live update during prompt
+// Streaming assistant message — live update during prompt.
+// Uses Streamdown with isAnimating=true so it handles incomplete
+// markdown (unclosed code fences, etc.) correctly during streaming.
 export function StreamingAssistantMessage({ text, thinking }: { text: string; thinking: string }) {
-  const html = renderMarkdown(text);
-
   return (
     <div className="message assistant">
       <div className="message-content streaming">
         {thinking ? <StreamingThinkingBlock thinking={thinking} /> : null}
-        {text ? <div dangerouslySetInnerHTML={{ __html: html }} /> : null}
+        {text ? (
+          <Streamdown
+            isAnimating
+            mode="streaming"
+          >
+            {text}
+          </Streamdown>
+        ) : null}
       </div>
     </div>
   );

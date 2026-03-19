@@ -25,7 +25,7 @@ export function ToolCard({ execution }: { execution: ToolExecution }) {
   const { toolCallId, toolName, args, status, output } = execution;
 
   const isActive = status === "streaming" || status === "pending";
-  const [expanded, setExpanded] = useState(isActive);
+  const [expanded, setExpanded] = useState(false);
 
   const preview = getArgsPreview(toolName, args);
 
