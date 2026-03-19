@@ -1,7 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
-import { indexRoute } from "@/routes/index-route";
-import { rootRoute } from "@/routes/root-route";
-import { workspaceRoute } from "@/routes/workspace-route";
+import { indexRoute } from "@/routes/index";
+import { rootRoute } from "@/routes/__root";
+import { workspaceRoute } from "@/routes/workspaces.$workspaceId";
 
 const routeTree = rootRoute.addChildren([indexRoute, workspaceRoute]);
 

@@ -13,7 +13,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@kiracode/backend": "*",
-    "@trpc/client": "^11.13.4"
+    "@kiracode/backend": "*"
   }
 }

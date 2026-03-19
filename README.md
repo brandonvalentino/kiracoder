@@ -20,10 +20,17 @@ KiraCode is an opinionated coding workspace platform powered by Pi internals.
 ```bash
 npm install
 npm run dev
+npm run dev:backend
+npm run dev:frontend
+npm run dev:full
 npm run build
 npm run typecheck
 npm run lint
 npm run format
 ```
 
-`npm run dev` now boots the `kiracode` app entry and wires it to the backend package stub.
+### Dev modes
+
+- `npm run dev:backend` starts the local backend on `http://127.0.0.1:3141`
+- `npm run dev:frontend` starts the Vite frontend on `http://127.0.0.1:5173`
+- `npm run dev:full` runs both together for frontend HMR against the live backend
