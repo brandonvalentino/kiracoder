@@ -2,6 +2,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 import { AppProviders } from "@/app/providers";
 import { router } from "@/app/router";
+import "@fontsource-variable/dm-sans";
 import "@/styles/globals.css";
 
 const rootElement = document.getElementById("root");
