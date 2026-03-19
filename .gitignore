@@ -3,6 +3,7 @@ node_modules/
 **/.turbo/
 **/dist/
 .DS_Store
+.worktrees/
 
 # Pi session exports
 pi-session-*.html
