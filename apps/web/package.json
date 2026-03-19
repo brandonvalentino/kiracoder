@@ -1,0 +1,18 @@
+{
+  "name": "kiracode",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "kiracode": "./bin/kiracode.mjs"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "dev": "node ./bin/kiracode.mjs",
+    "start": "node ./bin/kiracode.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@kiracode/backend": "*"
+  }
+}

@@ -1,28 +1,25 @@
 {
-  "name": "tau-mirror",
-  "version": "1.0.7",
-  "description": "Web UI that mirrors your Pi terminal session in the browser",
-  "keywords": [
-    "pi",
-    "pi-package",
-    "coding-agent",
-    "web-ui",
-    "mirror"
+  "name": "kiracode-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
-  "author": "deflating",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/deflating/tau.git"
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "oxlint apps packages",
+    "lint:fix": "oxlint --fix apps packages",
+    "format": "oxfmt --check apps packages",
+    "format:fix": "oxfmt apps packages"
   },
-  "pi": {
-    "extensions": [
-      "./extensions/mirror-server.ts"
-    ],
-    "image": "https://raw.githubusercontent.com/deflating/tau/main/docs/images/dark.png"
-  },
-  "dependencies": {
-    "ws": "^8.16.0",
-    "qrcode": "^1.5.0"
+  "devDependencies": {
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "turbo": "^2.5.8",
+    "typescript": "^5.8.2"
   }
 }
