@@ -17,14 +17,24 @@ export type WorkspaceRuntimeRecord = {
   cwd: string;
 };
 
+function createSessionDependencies(cwd: string) {
+  const authStorage = AuthStorage.create(resolveAuthPath());
+  const modelRegistry = new ModelRegistry(authStorage);
+  const settingsManager = SettingsManager.create(cwd, getPiAgentDir());
+
+  return {
+    authStorage,
+    modelRegistry,
+    settingsManager,
+  };
+}
+
 export async function createWorkspaceSession(
   workspaceId: string,
   cwd: string,
   sessionsDir: string,
 ) {
-  const authStorage = AuthStorage.create(resolveAuthPath());
-  const modelRegistry = new ModelRegistry(authStorage);
-  const settingsManager = SettingsManager.create(cwd, getPiAgentDir());
+  const { authStorage, modelRegistry, settingsManager } = createSessionDependencies(cwd);
   const sessionManager = SessionManager.create(cwd, sessionsDir);
   const { session } = await createAgentSession({
     agentDir: getPiAgentDir(),
@@ -37,6 +47,37 @@ export async function createWorkspaceSession(
 
   if (!session.sessionFile) {
     throw new Error("Agent session did not produce a session file");
+  }
+
+  return {
+    workspaceId,
+    session,
+    sessionId: session.sessionId,
+    sessionFile: session.sessionFile,
+    status: "idle",
+    cwd,
+  } satisfies WorkspaceRuntimeRecord;
+}
+
+export async function openWorkspaceSession(
+  workspaceId: string,
+  cwd: string,
+  sessionFile: string,
+  sessionsDir: string,
+) {
+  const { authStorage, modelRegistry, settingsManager } = createSessionDependencies(cwd);
+  const sessionManager = SessionManager.open(sessionFile, sessionsDir);
+  const { session } = await createAgentSession({
+    agentDir: getPiAgentDir(),
+    authStorage,
+    cwd,
+    modelRegistry,
+    sessionManager,
+    settingsManager,
+  });
+
+  if (!session.sessionFile) {
+    throw new Error("Agent session did not restore a session file");
   }
 
   return {

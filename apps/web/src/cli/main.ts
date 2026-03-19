@@ -15,8 +15,11 @@ export async function runCli() {
       name: "Main Workspace",
       projectId: project.id,
     });
+    const initialMessages = await client.workspaces.messages.query({
+      workspaceId: workspaceResult.workspace.id,
+    });
 
-    const message = [
+    const lines = [
       `Started ${runtime.server.name} (${runtime.server.status})`,
       `API: ${runtime.address.url}`,
       `Health: ${health.status}`,
@@ -24,8 +27,37 @@ export async function runCli() {
       `Workspace: ${workspaceResult.workspace.name}`,
       `Folder: ${workspaceResult.workspace.cwd}`,
       `Session: ${workspaceResult.runtime.sessionFile}`,
-    ].join("\n");
+      `Messages: ${initialMessages.length}`,
+    ];
 
+    const prompt = process.env.KIRACODE_PROMPT;
+    if (prompt) {
+      const receivedEventTypes: string[] = [];
+      const subscription = client.workspaces.events.subscribe(
+        { workspaceId: workspaceResult.workspace.id },
+        {
+          onData(data) {
+            const event = data.event as { type?: string };
+            receivedEventTypes.push(event.type ?? "unknown");
+          },
+        },
+      );
+
+      await client.workspaces.prompt.mutate({
+        message: prompt,
+        workspaceId: workspaceResult.workspace.id,
+      });
+
+      subscription.unsubscribe();
+      const nextMessages = await client.workspaces.messages.query({
+        workspaceId: workspaceResult.workspace.id,
+      });
+      lines.push(`Prompted: yes`);
+      lines.push(`Events: ${receivedEventTypes.join(", ") || "none"}`);
+      lines.push(`Messages after prompt: ${nextMessages.length}`);
+    }
+
+    const message = lines.join("\n");
     console.log(message);
     return message;
   } finally {

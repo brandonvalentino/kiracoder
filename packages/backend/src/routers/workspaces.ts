@@ -13,6 +13,15 @@ export const workspacesRouter = createRouter({
     .mutation(async ({ ctx, input }) => {
       return ctx.workspaceService.createWorkspace(input.projectId, input.name, input.cwd);
     }),
+  events: publicProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().min(1),
+      }),
+    )
+    .subscription(async function* ({ ctx, input, signal }) {
+      yield* ctx.workspaceService.subscribeToWorkspaceEvents(input.workspaceId, signal);
+    }),
   list: publicProcedure
     .input(
       z.object({
@@ -21,5 +30,24 @@ export const workspacesRouter = createRouter({
     )
     .query(({ ctx, input }) => {
       return ctx.workspaceService.listWorkspaces(input.projectId);
+    }),
+  messages: publicProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().min(1),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.workspaceService.getMessages(input.workspaceId);
+    }),
+  prompt: publicProcedure
+    .input(
+      z.object({
+        message: z.string().min(1),
+        workspaceId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.workspaceService.promptWorkspace(input.workspaceId, input.message);
     }),
 });

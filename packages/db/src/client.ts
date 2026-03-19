@@ -39,6 +39,9 @@ export function createDbClient() {
       workspaces.set(workspace.id, workspace);
       return workspace;
     },
+    getWorkspace(workspaceId: string) {
+      return workspaces.get(workspaceId);
+    },
     updateWorkspaceSessionFile(workspaceId: string, sessionFile: string) {
       const workspace = workspaces.get(workspaceId);
       if (!workspace) {

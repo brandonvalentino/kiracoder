@@ -7,6 +7,14 @@ export function createWorkspaceService(
   db: ReturnTypeCreateDbClient,
   runtimeManager: ReturnTypeCreateRuntimeManager,
 ) {
+  async function requireWorkspace(workspaceId: string) {
+    const workspace = db.getWorkspace(workspaceId);
+    if (!workspace) {
+      throw new Error(`Workspace not found: ${workspaceId}`);
+    }
+    return workspace;
+  }
+
   return {
     async createWorkspace(projectId: string, name: string, cwd?: string) {
       const selectedCwd = cwd ?? (await pickFolder());
@@ -31,8 +39,19 @@ export function createWorkspaceService(
         },
       };
     },
+    async getMessages(workspaceId: string) {
+      const workspace = await requireWorkspace(workspaceId);
+      return runtimeManager.getWorkspaceMessages(workspace);
+    },
     listWorkspaces(projectId: string) {
       return db.listWorkspaces(projectId);
+    },
+    async promptWorkspace(workspaceId: string, message: string) {
+      const workspace = await requireWorkspace(workspaceId);
+      return runtimeManager.promptWorkspace(workspace, message);
+    },
+    subscribeToWorkspaceEvents(workspaceId: string, signal?: AbortSignal) {
+      return runtimeManager.subscribeToWorkspaceEvents(workspaceId, signal);
     },
   };
 }
