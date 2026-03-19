@@ -1,7 +1,12 @@
-export { projectsRouter } from "./projects.js";
-export { workspacesRouter } from "./workspaces.js";
-export { sessionsRouter } from "./sessions.js";
-export { presetsRouter } from "./presets.js";
-export { filesRouter } from "./files.js";
-export { updatesRouter } from "./updates.js";
-export { extensionUiRouter } from "./extension-ui.js";
+import { createRouter } from "../trpc.ts";
+import { projectsRouter } from "./projects.ts";
+import { systemRouter } from "./system.ts";
+import { workspacesRouter } from "./workspaces.ts";
+
+export const appRouter = createRouter({
+  projects: projectsRouter,
+  system: systemRouter,
+  workspaces: workspacesRouter,
+});
+
+export type AppRouter = typeof appRouter;

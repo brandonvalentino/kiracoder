@@ -1,11 +1,11 @@
-import { createAppContext, createBackendServer } from "@kiracode/backend";
+import { createBackendServer } from "@kiracode/backend";
 
-export function startServer() {
-  const context = createAppContext();
+export async function startServer() {
   const server = createBackendServer();
+  const address = await server.start();
 
   return {
-    context,
+    address,
     server,
   };
 }
