@@ -1,13 +1,3 @@
-/**
- * Server Lifecycle
- *
- * Owns startup, shutdown, and runtime cleanup for the backend.
- * Preserves the external startup contract: { url, apiUrl, port }.
- *
- * The Hono application is assembled by createHonoApp; this module only
- * handles binding it to a Node HTTP server and managing lifecycle.
- */
-
 import { serve } from "@hono/node-server";
 import type { Server } from "node:http";
 import { createAppContext, type AppContext } from "./context.ts";
@@ -15,7 +5,7 @@ import { createHonoApp, type BackendAppOptions } from "./http/app.ts";
 import { TRPC_BASE_PATH } from "./http/trpc-mount.ts";
 
 export type BackendServerOptions = BackendAppOptions & {
-  context?: AppContext;
+  context?: AppContext | Promise<AppContext>;
 };
 
 export function createBackendApp(context: AppContext, options: BackendAppOptions = {}) {
@@ -23,17 +13,20 @@ export function createBackendApp(context: AppContext, options: BackendAppOptions
 }
 
 export function createBackendServer(options: BackendServerOptions = {}) {
-  const { context = createAppContext(), ...appOptions } = options;
-  const honoApp = createBackendApp(context, appOptions);
+  const { context, ...appOptions } = options;
+  const contextPromise = Promise.resolve(context ?? createAppContext());
 
+  let appContext: AppContext | null = null;
   let httpServer: Server | null = null;
 
   return {
     name: "kiracode-backend",
     status: "ready",
 
-    /** Start the server on the given port (default 0 = OS-assigned). */
     async start(port = 0) {
+      appContext = await contextPromise;
+      const honoApp = createBackendApp(appContext, appOptions);
+
       await new Promise<void>((resolve) => {
         httpServer = serve(
           {
@@ -57,7 +50,6 @@ export function createBackendServer(options: BackendServerOptions = {}) {
       };
     },
 
-    /** Stop the server and dispose all open runtimes. */
     async stop() {
       await new Promise<void>((resolve, reject) => {
         if (!httpServer) {
@@ -72,10 +64,10 @@ export function createBackendServer(options: BackendServerOptions = {}) {
           resolve();
         });
       });
-      await Promise.resolve(context.runtimeManager.disposeAll());
+      await Promise.resolve(appContext?.runtimeManager.disposeAll());
+      appContext?.db.close();
     },
 
-    /** Exposed for test introspection; prefer start/stop for lifecycle. */
     get httpServer(): Server | null {
       return httpServer;
     },

@@ -8,10 +8,10 @@ export const projectsRouter = createRouter({
         name: z.string().min(1),
       }),
     )
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       return ctx.projectService.createProject(input.name);
     }),
-  list: publicProcedure.query(({ ctx }) => {
+  list: publicProcedure.query(async ({ ctx }) => {
     return ctx.projectService.listProjects();
   }),
 });

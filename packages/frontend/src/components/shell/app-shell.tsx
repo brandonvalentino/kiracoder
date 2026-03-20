@@ -1,10 +1,20 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/stores/app-store";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 function RefreshIcon() {
   return (
-    <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14">
+    <svg
+      fill="none"
+      height="14"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="14"
+    >
       <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
       <path d="M21 3v5h-5" />
     </svg>
@@ -13,7 +23,16 @@ function RefreshIcon() {
 
 function PlusIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width={size}>
+    <svg
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width={size}
+    >
       <line x1="12" x2="12" y1="5" y2="19" />
       <line x1="5" x2="19" y1="12" y2="12" />
     </svg>
@@ -27,7 +46,10 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
       height="8"
       viewBox="0 0 8 8"
       width="8"
-      style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+      style={{
+        transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 0.15s ease",
+      }}
     >
       <path d="M2 1l4 3-4 3z" />
     </svg>
@@ -36,7 +58,16 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 
 function SettingsIcon() {
   return (
-    <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="16">
+    <svg
+      fill="none"
+      height="16"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="16"
+    >
       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -45,7 +76,16 @@ function SettingsIcon() {
 
 function MenuIcon() {
   return (
-    <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="18">
+    <svg
+      fill="none"
+      height="18"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="18"
+    >
       <line x1="3" x2="21" y1="6" y2="6" />
       <line x1="3" x2="21" y1="12" y2="12" />
       <line x1="3" x2="21" y1="18" y2="18" />
@@ -55,7 +95,16 @@ function MenuIcon() {
 
 function FolderIcon() {
   return (
-    <svg fill="none" height="12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="12">
+    <svg
+      fill="none"
+      height="12"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width="12"
+    >
       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
     </svg>
   );
@@ -163,7 +212,6 @@ export function AppShell() {
     <div className="app-layout">
       {/* ── Left sidebar ─────────────────────────────── */}
       <div className={`sidebar${sidebarOpen ? "" : " collapsed"}`} id="sidebar">
-
         {/* Sidebar header */}
         <div className="sidebar-header">
           <span className="sidebar-brand">KiraCoder</span>
@@ -199,7 +247,10 @@ export function AppShell() {
               onChange={(e) => setProjectName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void handleCreateProject();
-                if (e.key === "Escape") { setShowNewProject(false); setProjectName(""); }
+                if (e.key === "Escape") {
+                  setShowNewProject(false);
+                  setProjectName("");
+                }
               }}
               placeholder="Project name…"
               value={projectName}
@@ -230,7 +281,9 @@ export function AppShell() {
                     Create your first project →
                   </button>
                 </>
-              ) : "Loading…"}
+              ) : (
+                "Loading…"
+              )}
             </div>
           ) : (
             projects.map((project) => {
@@ -253,7 +306,9 @@ export function AppShell() {
                     }}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter") toggleProject(project.id); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") toggleProject(project.id);
+                    }}
                   >
                     <span className="project-chevron">
                       <ChevronIcon expanded={!isCollapsed} />
@@ -291,7 +346,9 @@ export function AppShell() {
                             onChange={(e) => setWorkspaceName(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") void handleCreateWorkspace();
-                              if (e.key === "Escape") { setNewWorkspaceForProject(null); }
+                              if (e.key === "Escape") {
+                                setNewWorkspaceForProject(null);
+                              }
                             }}
                             placeholder="Workspace name…"
                             value={workspaceName}
@@ -301,7 +358,9 @@ export function AppShell() {
                             onChange={(e) => setWorkspacePath(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") void handleCreateWorkspace();
-                              if (e.key === "Escape") { setNewWorkspaceForProject(null); }
+                              if (e.key === "Escape") {
+                                setNewWorkspaceForProject(null);
+                              }
                             }}
                             placeholder="Folder path (optional)"
                             value={workspacePath}
@@ -323,6 +382,8 @@ export function AppShell() {
 
                       {workspaces.map((workspace) => {
                         const isWsActive = workspace.id === activeWorkspaceId;
+                        const wsStatus = useAppStore.getState().workspaceStatuses[workspace.id];
+                        const isBroken = wsStatus?.type === "broken";
                         return (
                           <Link
                             className={`session-item${isWsActive ? " active" : ""}`}
@@ -331,9 +392,46 @@ export function AppShell() {
                             params={{ workspaceId: workspace.id }}
                             to="/workspaces/$workspaceId"
                           >
-                            <span className="session-icon"><FolderIcon /></span>
+                            <span
+                              className="session-icon"
+                              style={isBroken ? { color: "var(--error)" } : undefined}
+                            >
+                              {isBroken ? (
+                                // Small warning triangle replaces the folder icon
+                                <svg fill="currentColor" height="12" viewBox="0 0 24 24" width="12">
+                                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                  <line
+                                    stroke="white"
+                                    strokeLinecap="round"
+                                    strokeWidth="2"
+                                    x1="12"
+                                    x2="12"
+                                    y1="9"
+                                    y2="13"
+                                  />
+                                  <line
+                                    stroke="white"
+                                    strokeLinecap="round"
+                                    strokeWidth="2"
+                                    x1="12"
+                                    x2="12.01"
+                                    y1="17"
+                                    y2="17"
+                                  />
+                                </svg>
+                              ) : (
+                                <FolderIcon />
+                              )}
+                            </span>
                             <div className="session-info">
-                              <span className="session-title">{workspace.name}</span>
+                              <span
+                                className="session-title"
+                                style={
+                                  isBroken ? { color: "var(--error)", opacity: 0.8 } : undefined
+                                }
+                              >
+                                {workspace.name}
+                              </span>
                               {workspace.cwd && (
                                 <span className="session-meta">{workspace.cwd}</span>
                               )}
@@ -397,7 +495,9 @@ export function AppShell() {
           </div>
         </div>
 
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </div>
     </div>
   );

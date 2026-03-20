@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { createApiClient, apiBaseUrl } from "@/lib/api";
 import { parsePiEvent, formatToolResult, type ToolExecution } from "@/lib/pi-events";
+import { getTRPCErrorCode } from "@/lib/trpc-error";
+
+// ─── Domain types ────────────────────────────────────────────────────────────
 
 type Project = {
   createdAt: string;
@@ -34,6 +37,33 @@ type AgentMessage = {
 
 type StreamingState = { text: string; thinking: string };
 
+/**
+ * Per-workspace health status.
+ *
+ * - ok            – session is open or has never been tried
+ * - broken        – session file is missing / corrupt, or workspace row is gone
+ *
+ * `reason` lets the UI distinguish recoverable (session_missing) from
+ * unrecoverable (not_found) states so it can conditionally offer "Reset session".
+ */
+export type WorkspaceStatus =
+  | { type: "ok" }
+  | {
+      type: "broken";
+      message: string;
+      reason: "session_missing" | "not_found" | "unknown";
+    };
+
+function toWorkspaceStatus(error: unknown): WorkspaceStatus {
+  const code = getTRPCErrorCode(error);
+  const message = error instanceof Error ? error.message : "Workspace unavailable";
+  if (code === "NOT_FOUND") return { type: "broken", message, reason: "not_found" };
+  if (code === "PRECONDITION_FAILED") return { type: "broken", message, reason: "session_missing" };
+  return { type: "broken", message, reason: "unknown" };
+}
+
+// ─── Store type ──────────────────────────────────────────────────────────────
+
 type AppStore = {
   // Core
   activeProjectId: string | null;
@@ -46,6 +76,9 @@ type AppStore = {
   workspacesByProject: Record<string, Workspace[]>;
   messagesByWorkspace: Record<string, AgentMessage[]>;
   toolExecutionsByWorkspace: Record<string, Record<string, ToolExecution>>;
+
+  // Workspace health — keyed by workspaceId
+  workspaceStatuses: Record<string, WorkspaceStatus>;
 
   // Streaming
   isStreaming: boolean;
@@ -75,6 +108,11 @@ type AppStore = {
     projectId: string;
   }) => Promise<{ runtime: RuntimeSummary; workspace: Workspace }>;
   promptWorkspace: (workspaceId: string, message: string) => Promise<void>;
+  /**
+   * Create a fresh Pi session for a broken workspace and clear its error
+   * status.  Only valid when status.reason === "session_missing".
+   */
+  recoverWorkspace: (workspaceId: string) => Promise<void>;
   // Returns the unsubscribe fn — route effect uses it as cleanup.
   subscribeToWorkspace: (workspaceId: string) => () => void;
 };
@@ -90,6 +128,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   workspacesByProject: {},
   messagesByWorkspace: {},
   toolExecutionsByWorkspace: {},
+  workspaceStatuses: {},
   isStreaming: false,
   streamingWorkspaceId: null,
   streamingState: { text: "", thinking: "" },
@@ -143,14 +182,27 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   },
 
   async loadMessages(workspaceId) {
-    const messages = await client.workspaces.messages.query({ workspaceId });
-    set((state) => ({
-      messagesByWorkspace: {
-        ...state.messagesByWorkspace,
-        [workspaceId]: messages as AgentMessage[],
-      },
-    }));
-    return messages as AgentMessage[];
+    try {
+      const messages = await client.workspaces.messages.query({ workspaceId });
+      set((state) => ({
+        workspaceStatuses: { ...state.workspaceStatuses, [workspaceId]: { type: "ok" } },
+        messagesByWorkspace: {
+          ...state.messagesByWorkspace,
+          [workspaceId]: messages as AgentMessage[],
+        },
+      }));
+      return messages as AgentMessage[];
+    } catch (error) {
+      // Record the broken status but don't re-throw — the UI reads
+      // workspaceStatuses to decide what to render.
+      set((state) => ({
+        workspaceStatuses: {
+          ...state.workspaceStatuses,
+          [workspaceId]: toWorkspaceStatus(error),
+        },
+      }));
+      return [];
+    }
   },
 
   async createProject(name) {
@@ -168,6 +220,10 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     set((state) => ({
       activeWorkspaceId: result.workspace.id,
       statusText: `Workspace "${result.workspace.name}" ready`,
+      workspaceStatuses: {
+        ...state.workspaceStatuses,
+        [result.workspace.id]: { type: "ok" },
+      },
       workspacesByProject: {
         ...state.workspacesByProject,
         [input.projectId]: [
@@ -206,8 +262,42 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       await get().loadMessages(workspaceId);
       set({ statusText: "Ready" });
     } catch (error) {
+      const code = getTRPCErrorCode(error);
+      if (code === "PRECONDITION_FAILED" || code === "NOT_FOUND") {
+        // Session is broken — surface it in the UI rather than as a status bar
+        // message so the user gets the recovery option.
+        set((state) => ({
+          isStreaming: false,
+          streamingWorkspaceId: null,
+          workspaceStatuses: {
+            ...state.workspaceStatuses,
+            [workspaceId]: toWorkspaceStatus(error),
+          },
+        }));
+        return;
+      }
       const msg = error instanceof Error ? error.message : "Prompt failed";
       set({ isStreaming: false, streamingWorkspaceId: null, statusText: msg });
+      throw error;
+    }
+  },
+
+  async recoverWorkspace(workspaceId) {
+    try {
+      set({ statusText: "Resetting session…" });
+      await client.workspaces.resetSession.mutate({ workspaceId });
+      set((state) => ({
+        workspaceStatuses: {
+          ...state.workspaceStatuses,
+          [workspaceId]: { type: "ok" },
+        },
+        statusText: "Ready",
+      }));
+      // Re-load messages now that the session is fresh.
+      await get().loadMessages(workspaceId);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Recovery failed";
+      set({ statusText: msg });
       throw error;
     }
   },
@@ -371,6 +461,19 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           }
         },
         onError(error) {
+          const code = getTRPCErrorCode(error);
+          if (code === "PRECONDITION_FAILED" || code === "NOT_FOUND") {
+            // Subscription died because the session is broken — surface the
+            // same broken-workspace state as loadMessages does.
+            set((state) => ({
+              isStreaming: false,
+              workspaceStatuses: {
+                ...state.workspaceStatuses,
+                [workspaceId]: toWorkspaceStatus(error),
+              },
+            }));
+            return;
+          }
           set({ statusText: `Subscription error: ${error.message}`, isStreaming: false });
         },
       },

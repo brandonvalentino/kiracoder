@@ -1,7 +1,7 @@
-import type { createDbClient } from "@kiracode/db";
+import type { Database } from "@kiracode/db";
 import type { createRuntimeManager } from "@kiracode/session-runtime";
 import type { createAppContext } from "./context.ts";
 
-export type ReturnTypeCreateDbClient = ReturnType<typeof createDbClient>;
+export type ReturnTypeCreateDatabase = Database;
 export type ReturnTypeCreateRuntimeManager = ReturnType<typeof createRuntimeManager>;
-export type AppContext = ReturnType<typeof createAppContext>;
+export type AppContext = Awaited<ReturnType<typeof createAppContext>>;

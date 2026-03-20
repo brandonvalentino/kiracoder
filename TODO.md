@@ -90,14 +90,13 @@ The wiring is present (frontend → tRPC → SDK) but has never been tested agai
 - [ ] Event subscription pipeline exists but has **not been tested in real conditions** — event types from Pi SDK are not yet mapped to meaningful UI states
 
 ### Persistence
-All data lives in a `Map` in memory — **nothing survives a backend restart**:
-- [ ] `db/client.ts` is a `Map`, not a database
-- [ ] All projects and workspaces are lost when the server stops
-- [ ] Existing session files in `~/.kiracode/sessions` can never be reloaded because there is no record of them
+- [x] Projects and workspaces now persist to LibSQL at `~/.kiracode/app.db`
+- [x] Session files survive backend restart and are lazily reopened on first access
+- [x] Missing/corrupt session file surfaces as a typed tRPC error (`PRECONDITION_FAILED`)
 
 ### Workspace lifecycle
-- [ ] **Workspace re-open is broken** — if the backend restarts, no workspace can be restored from disk
-- [ ] **No duplicate runtime guard in practice** — if the same workspace is requested twice before the first resolves, two runtimes may be created
+- [x] Workspace re-open works — DB row → `openWorkspaceSession` on demand
+- [x] Concurrent reopen requests coalesce into a single in-flight promise
 - [ ] **Idle session disposal is not implemented**
 
 ### Folder picker
@@ -110,10 +109,13 @@ All data lives in a `Map` in memory — **nothing survives a backend restart**:
 These exist and are partially correct but need finishing.
 
 ### Frontend UX
-- [ ] Add real loading/empty/error states everywhere (currently optimistic or silent on failure)
+- [x] Broken workspace state: missing/corrupt session shows recovery screen with "Create new session"
+- [x] Workspace errors caught in `loadMessages`, `promptWorkspace`, and subscription `onError`
+- [x] Error boundaries wrap the workspace route and main outlet
 - [ ] Subscription reconnect on page refresh is not reliable
 - [ ] Event rendering shows raw event type strings, not useful UI
 - [ ] Chat messages render as plain `<pre>` blocks, not formatted markdown
+- [ ] Loading/empty/error states missing in other parts of the UI (sidebar, project list, etc.)
 - [ ] Mobile/responsive behavior is untested
 
 ---
@@ -121,9 +123,9 @@ These exist and are partially correct but need finishing.
 ## Must do for a production-ready v1
 
 ### 1. Storage and app state
-- [ ] Implement SQLite in `@kiracode/db`
-- [ ] Store projects persistently
-- [ ] Store workspaces persistently
+- [x] Implement LibSQL in `@kiracode/db` (local file mode, upgrade-ready to Turso)
+- [x] Store projects persistently
+- [x] Store workspaces persistently (including `session_file` reference)
 - [ ] Store app-level metadata:
   - [ ] tags
   - [ ] favorites
@@ -134,11 +136,11 @@ These exist and are partially correct but need finishing.
 ### 2. Workspace lifecycle
 - [ ] Make workspace creation fully UI-driven
 - [ ] Implement native folder picker in `@kiracode/native`
-- [ ] Implement workspace re-open from saved DB records
-- [ ] Reload existing Pi session files via SDK on demand
+- [x] Implement workspace re-open from saved DB records
+- [x] Reload existing Pi session files via SDK on demand (lazy, via `ensureWorkspaceRuntime`)
 - [ ] Dispose idle workspaces from memory
-- [ ] Rehydrate unloaded workspaces on access
-- [ ] Prevent duplicate runtimes for the same workspace
+- [x] Rehydrate unloaded workspaces on access
+- [x] Prevent duplicate runtimes for the same workspace
 
 ### 3. Prompting and event streaming
 - [ ] Confirm tRPC subscription behavior is robust under real prompts
@@ -199,16 +201,19 @@ These exist and are partially correct but need finishing.
 - [ ] Normalize behavior across macOS/Linux/Windows where possible
 
 ### 9. Error handling and resilience
-- [ ] Add structured backend error handling
-- [ ] Add frontend error boundaries
+- [x] Add structured backend error handling (typed workspace errors → tRPC codes)
+- [x] Add frontend error boundaries (workspace route + main outlet)
+- [x] Handle corrupted/missing session files gracefully (broken workspace UI + recovery action)
 - [ ] Handle missing auth/model configuration gracefully
 - [ ] Handle backend unavailable state in frontend
-- [ ] Handle corrupted/missing session files gracefully
 - [ ] Add runtime logging and diagnostic logs under `~/.kiracode/logs`
 
 ### 10. Testing
-- [ ] Add smoke tests for backend API
-- [ ] Add smoke tests for session runtime lifecycle
+- [x] Add smoke tests for backend API (tRPC routing, static delivery, lifecycle, events)
+- [x] Add smoke tests for persistence contract (projects/workspaces survive DB recreation)
+- [x] Add smoke tests for tRPC error codes (`NOT_FOUND`, `PRECONDITION_FAILED`)
+- [x] Add smoke test for duplicate runtime guard
+- [ ] Add smoke tests for session runtime lifecycle (requires real Pi SDK)
 - [ ] Add smoke tests for frontend boot + routing
 - [ ] Add a basic end-to-end test for:
   - [ ] create project
@@ -243,14 +248,14 @@ These exist and are partially correct but need finishing.
 
 To get to a state where the app actually works end-to-end, in order:
 
-1. **SQLite persistence** — nothing works reliably without it; projects/workspaces must survive restarts
-2. **Verify prompt end-to-end** — confirm `workspaces.prompt` runs against a real model with real auth; fix any SDK plumbing issues found
+1. ~~**LibSQL persistence**~~ ✅ done
+2. ~~**Verify prompt end-to-end**~~ ✅ working (prompt + streaming confirmed)
 3. **Native folder picker** — replace the `cwd` stub so workspace creation is actually usable
-4. **Streaming token UI** — surface assistant tokens as they arrive instead of waiting for full completion
-5. **Workspace reload/unload lifecycle** — re-open existing workspaces from saved session files on startup
-6. **Real error handling** — surface auth missing, model unavailable, session corrupt gracefully in the UI
-7. **Markdown rendering + chat polish** — messages are currently `<pre>` blocks
-8. **Event-to-UI mapping** — map Pi SDK event types to useful status indicators
+4. **Markdown rendering + chat polish** — messages are currently `<pre>` blocks; streaming is wired but needs visual polish
+5. **Auth/model error handling** — surface missing auth or unavailable model gracefully instead of crashing the session
+6. **Subscription reconnect** — if the frontend refreshes mid-session, the event subscription should re-attach cleanly
+7. **Event-to-UI mapping** — map Pi SDK event types to useful status indicators beyond the current typing indicator
+8. **Idle session disposal** — evict runtimes from memory after a period of inactivity
 9. **Branch tree + search + rename/export**
 10. **Extension UI bridge**
 11. **Release packaging and update flow**

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useAppStore } from "@/stores/app-store";
+import { useAppStore, type WorkspaceStatus } from "@/stores/app-store";
 import { UserMessage, AssistantMessage, StreamingAssistantMessage } from "./message-bubble";
 import { ToolCard } from "./tool-card";
 import { ChatInput } from "./chat-input";
@@ -44,6 +44,83 @@ function Welcome() {
   );
 }
 
+function BrokenWorkspace({
+  status,
+  onRecover,
+}: {
+  status: Extract<WorkspaceStatus, { type: "broken" }>;
+  onRecover: () => void;
+}) {
+  const canRecover = status.reason === "session_missing" || status.reason === "unknown";
+
+  return (
+    <div className="welcome">
+      <div className="welcome-icon">
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 18,
+            background: "rgba(248, 113, 113, 0.08)",
+            border: "1px solid rgba(248, 113, 113, 0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 24,
+            color: "var(--error)",
+          }}
+        >
+          ⚠
+        </div>
+      </div>
+
+      <p style={{ color: "var(--error)" }}>
+        {status.reason === "not_found" ? "Workspace not found" : "Session unavailable"}
+      </p>
+
+      <p className="hint">
+        {status.reason === "not_found"
+          ? "This workspace no longer exists in the database."
+          : "The session file for this workspace is missing or could not be opened."}
+      </p>
+
+      {canRecover && (
+        <button
+          onClick={onRecover}
+          type="button"
+          style={{
+            marginTop: 8,
+            padding: "8px 20px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border)",
+            background: "var(--bg-glass)",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 13,
+            transition: "all var(--duration) var(--ease)",
+          }}
+        >
+          Create new session
+        </button>
+      )}
+
+      <p
+        style={{
+          marginTop: 12,
+          fontSize: 10,
+          color: "var(--text-dim)",
+          fontFamily: "var(--font-mono)",
+          maxWidth: 360,
+          wordBreak: "break-word",
+          textAlign: "center",
+        }}
+      >
+        {status.message}
+      </p>
+    </div>
+  );
+}
+
 export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   // rerender-memo-with-default-value: fall back to the stable constants so
   // the array/object reference never changes when there is no data yet.
@@ -52,6 +129,9 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   );
   const toolExecutions = useAppStore((s) =>
     workspaceId ? (s.toolExecutionsByWorkspace[workspaceId] ?? EMPTY_EXECUTIONS) : EMPTY_EXECUTIONS,
+  );
+  const workspaceStatus = useAppStore((s) =>
+    workspaceId ? (s.workspaceStatuses[workspaceId] ?? { type: "ok" as const }) : null,
   );
 
   // rerender-derived-state: subscribe to derived booleans instead of the full
@@ -110,6 +190,12 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
     await promptWorkspace(workspaceId, message);
   }
 
+  function handleRecover() {
+    if (!workspaceId) return;
+    const { recoverWorkspace } = useAppStore.getState();
+    void recoverWorkspace(workspaceId);
+  }
+
   if (!workspaceId) {
     return (
       <div
@@ -117,6 +203,19 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
       >
         <div className="messages" ref={messagesRef} style={{ paddingTop: 24, paddingBottom: 24 }}>
           <Welcome />
+        </div>
+      </div>
+    );
+  }
+
+  // Broken workspace — show recovery screen instead of message list.
+  if (workspaceStatus?.type === "broken") {
+    return (
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}
+      >
+        <div className="messages" style={{ paddingTop: 24, paddingBottom: 24 }}>
+          <BrokenWorkspace status={workspaceStatus} onRecover={handleRecover} />
         </div>
       </div>
     );
