@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 /* Allow Tailwind to scan Streamdown's dist for utility classes */
-@source "../../../../node_modules/streamdown/dist/*.js";
+@source "../../node_modules/streamdown/dist/*.js";
 
 /* ═══════════════════════════════════════════════════════
    Tau design tokens — KiraCode dark (night) theme
