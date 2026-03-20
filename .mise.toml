@@ -23,7 +23,7 @@ VITE_KIRACODE_API_URL = "http://127.0.0.1:3141/trpc"
 
 [tasks.install]
 description = "Install all dependencies"
-run = "pnpm install"
+run = "bun install"
 
 [tasks.dev]
 description = "Start development servers (backend + frontend)"

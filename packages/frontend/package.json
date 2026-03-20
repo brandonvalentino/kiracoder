@@ -12,6 +12,9 @@
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@kiracode/backend": "workspace:*",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-context-menu": "^2.2.16",
+    "@radix-ui/react-slot": "^1.2.4",
     "@t3-oss/env-core": "^0.13.10",
     "@tanstack/react-router": "^1.133.7",
     "@trpc/client": "^11.6.0",
