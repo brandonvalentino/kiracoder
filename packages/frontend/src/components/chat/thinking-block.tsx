@@ -15,7 +15,7 @@ export function ThinkingBlock({ thinking }: { thinking: string }) {
             <path d="M2 1l4 3-4 3z" />
           </svg>
         </span>
-        <span className="thinking-label">
+        <span className="thinking-label flex flex-row items-center gap-1.5">
           <svg
             fill="none"
             height="12"
@@ -23,7 +23,6 @@ export function ThinkingBlock({ thinking }: { thinking: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            style={{ verticalAlign: "-1px" }}
             viewBox="0 0 24 24"
             width="12"
           >
@@ -32,7 +31,7 @@ export function ThinkingBlock({ thinking }: { thinking: string }) {
             <path d="M12 5v13" />
             <path d="M6.5 9h11" />
             <path d="M7 13h10" />
-          </svg>{" "}
+          </svg>
           Thinking
         </span>
       </button>
