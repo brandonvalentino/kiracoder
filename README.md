@@ -33,16 +33,54 @@ mise run setup
 
 Run `mise tasks ls` to see all available tasks.
 
+## Environment Variables
+
+KiraCode uses [t3-env](https://github.com/t3-oss/t3-env) for type-safe environment variable validation. Variables are validated at startup with Zod schemas.
+
+### Required Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Backend server port (defaults to 3141 if not set)
+KIRACODE_PORT=3141
+
+# Frontend API URL (Vite exposes VITE_* vars to the client)
+VITE_KIRACODE_API_URL=http://127.0.0.1:3141/trpc
+```
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `KIRACODE_PORT` | No | `3141` | Port for the backend server |
+| `VITE_KIRACODE_API_URL` | Yes | — | Full URL to the tRPC API endpoint |
+
+### Usage in Code
+
+```typescript
+// Backend/App (server-only)
+import { env } from "./env.ts";
+const port = env.KIRACODE_PORT; // number, validated
+
+// Frontend (client-safe)
+import { env } from "../env.ts";
+const apiUrl = env.VITE_KIRACODE_API_URL; // string, validated URL
+```
+
+The validation ensures:
+- Missing required vars throw clear errors at startup
+- Invalid URLs are caught before runtime issues
+- Server vars can't accidentally leak to client bundles
+
 ## Manual Setup (Alternative)
 
 If you prefer not to use Mise, ensure you have:
 - Node.js 22+ (LTS recommended)
-- npm 11.6.2+
+- pnpm 10.8.1+
 
 Then run:
 ```bash
-npm install
-npm run typecheck  # verify setup
+pnpm install
+pnpm typecheck  # verify setup
 ```
 
 ## Workspace layout
@@ -61,19 +99,19 @@ npm run typecheck  # verify setup
 ## Commands
 
 ```bash
-npm install
-npm run dev
-npm run dev:backend
-npm run dev:frontend
-npm run dev:full
-npm run build
-npm run typecheck
-npm run lint
-npm run format
+pnpm install
+pnpm dev
+pnpm dev:backend
+pnpm dev:frontend
+pnpm dev:full
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm format
 ```
 
 ### Dev modes
 
-- `npm run dev:backend` starts the local backend on `http://127.0.0.1:3141`
-- `npm run dev:frontend` starts the Vite frontend on `http://127.0.0.1:5173`
-- `npm run dev:full` runs both together for frontend HMR against the live backend
+- `pnpm dev:backend` starts the local backend on `http://127.0.0.1:3141`
+- `pnpm dev:frontend` starts the Vite frontend on `http://127.0.0.1:5173`
+- `pnpm dev:full` runs both together for frontend HMR against the live backend

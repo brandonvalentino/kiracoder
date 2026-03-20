@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@kiracode/backend": "workspace:*",
-    "@trpc/client": "^11.6.0"
+    "@t3-oss/env-core": "^0.13.10",
+    "@trpc/client": "^11.6.0",
+    "zod": "^4.3.6"
   }
 }

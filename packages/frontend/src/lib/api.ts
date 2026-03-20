@@ -5,9 +5,9 @@ import {
   splitLink,
 } from "@trpc/client";
 import type { AppRouter } from "@kiracode/backend";
+import { env } from "../env.ts";
 
-export const apiBaseUrl =
-  import.meta.env.VITE_KIRACODE_API_URL?.trim() || `${window.location.origin}/trpc`;
+export const apiBaseUrl = env.VITE_KIRACODE_API_URL;
 
 export function createApiClient() {
   return createTRPCProxyClient<AppRouter>({

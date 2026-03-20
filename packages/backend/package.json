@@ -17,6 +17,7 @@
     "@kiracode/db": "workspace:*",
     "@kiracode/native": "workspace:*",
     "@kiracode/session-runtime": "workspace:*",
+    "@t3-oss/env-core": "^0.13.10",
     "@trpc/server": "^11.13.4",
     "hono": "^4.12.8",
     "zod": "^4.3.6"

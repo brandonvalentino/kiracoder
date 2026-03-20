@@ -5,9 +5,9 @@
   "packageManager": "pnpm@10.8.1",
   "scripts": {
     "build": "turbo run build",
-    "dev": "KIRACODE_PORT=3141 VITE_KIRACODE_API_URL=http://127.0.0.1:3141/trpc turbo run dev --filter=kiracode --filter=@kiracode/frontend",
-    "dev:backend": "KIRACODE_PORT=3141 turbo run dev --filter=kiracode",
-    "dev:frontend": "VITE_KIRACODE_API_URL=http://127.0.0.1:3141/trpc turbo run dev --filter=@kiracode/frontend",
+    "dev": "turbo run dev --filter=kiracode --filter=@kiracode/frontend",
+    "dev:backend": "turbo run dev --filter=kiracode",
+    "dev:frontend": "turbo run dev --filter=@kiracode/frontend",
     "typecheck": "turbo run typecheck",
     "lint": "oxlint apps packages",
     "lint:fix": "oxlint --fix apps packages",
