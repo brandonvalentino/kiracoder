@@ -1,0 +1,90 @@
+# Mise configuration for Kiracoder development environment
+# Install mise: https://mise.jdx.dev/getting-started.html
+# Then run: mise install
+
+[tools]
+# Node.js LTS version (Node 22 is current LTS)
+# Change to "20" if you prefer the previous LTS
+node = "22"
+
+# Package manager version (from package.json packageManager field)
+npm = "11.6.2"
+
+# Task runner (installed globally for monorepo builds)
+# Version matches package.json devDependencies
+"npm:turbo" = "2.8.20"
+
+[env]
+# Default port for the backend server
+KIRACODE_PORT = "3141"
+
+# Default API URL for frontend development
+VITE_KIRACODE_API_URL = "http://127.0.0.1:3141/trpc"
+
+[tasks.install]
+description = "Install all npm dependencies"
+run = "npm install"
+
+[tasks.dev]
+description = "Start development servers (backend + frontend)"
+run = "npm run dev"
+
+[tasks."dev:backend"]
+description = "Start only the backend server"
+run = "npm run dev:backend"
+
+[tasks."dev:frontend"]
+description = "Start only the frontend dev server"
+run = "npm run dev:frontend"
+
+[tasks.build]
+description = "Build all packages and apps"
+run = "npm run build"
+
+[tasks.typecheck]
+description = "Run TypeScript type checking"
+run = "npm run typecheck"
+
+[tasks.lint]
+description = "Lint all code with oxlint"
+run = "npm run lint"
+
+[tasks."lint:fix"]
+description = "Auto-fix linting issues"
+run = "npm run lint:fix"
+
+[tasks.format]
+description = "Check code formatting"
+run = "npm run format"
+
+[tasks."format:fix"]
+description = "Auto-format all code"
+run = "npm run format:fix"
+
+[tasks.test]
+description = "Run all tests with vitest"
+run = "npm test"
+
+[tasks.clean]
+description = "Clean build artifacts and node_modules"
+run = """
+rm -rf node_modules
+rm -rf apps/*/node_modules
+rm -rf packages/*/node_modules
+rm -rf .turbo
+rm -rf apps/*/.turbo
+rm -rf packages/*/.turbo
+rm -rf apps/*/dist
+rm -rf packages/*/dist
+echo "Cleaned all build artifacts and node_modules"
+"""
+
+[tasks.setup]
+description = "Full setup for new developers (clean install + typecheck)"
+depends = ["install"]
+run = ["npm run typecheck"]
+
+[tasks."reset"]
+description = "Complete reset: clean, reinstall, and verify"
+depends = ["clean"]
+run = ["npm install", "npm run typecheck"]
