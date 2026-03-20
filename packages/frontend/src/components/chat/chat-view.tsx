@@ -200,7 +200,7 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   if (!workspaceId) {
     return (
       <div
-        style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}
+        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}
       >
         <div className="messages" ref={messagesRef} style={{ paddingTop: 24, paddingBottom: 24 }}>
           <Welcome />
@@ -213,7 +213,7 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   if (workspaceStatus?.type === "broken") {
     return (
       <div
-        style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}
+        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}
       >
         <div className="messages" style={{ paddingTop: 24, paddingBottom: 24 }}>
           <BrokenWorkspace status={workspaceStatus} onRecover={handleRecover} />
@@ -228,7 +228,7 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   const liveToolExecutions = Object.values(toolExecutions);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}>
       <div className="messages" ref={messagesRef}>
         {messages.length === 0 && !isThisWorkspaceStreaming ? (
           <Welcome />

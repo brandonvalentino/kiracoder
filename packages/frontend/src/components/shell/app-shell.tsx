@@ -390,6 +390,7 @@ export function AppShell() {
                             key={workspace.id}
                             onClick={() => selectWorkspace(workspace.id)}
                             params={{ workspaceId: workspace.id }}
+                            title={workspace.cwd || undefined}
                             to="/workspaces/$workspaceId"
                           >
                             <span
@@ -432,9 +433,6 @@ export function AppShell() {
                               >
                                 {workspace.name}
                               </span>
-                              {workspace.cwd && (
-                                <span className="session-meta">{workspace.cwd}</span>
-                              )}
                             </div>
                           </Link>
                         );
