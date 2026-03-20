@@ -10,6 +10,7 @@ import type { ToolResultMessage } from "@/lib/pi-events";
 // selectors below never return a new reference when the workspace has no data.
 const EMPTY_MESSAGES: AgentMessage[] = [];
 const EMPTY_EXECUTIONS: Record<string, import("@/lib/pi-events").ToolExecution> = {};
+const DEFAULT_WORKSPACE_STATUS: import("@/stores/app-store").WorkspaceStatus = { type: "ok" };
 
 function Welcome() {
   return (
@@ -131,7 +132,7 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
     workspaceId ? (s.toolExecutionsByWorkspace[workspaceId] ?? EMPTY_EXECUTIONS) : EMPTY_EXECUTIONS,
   );
   const workspaceStatus = useAppStore((s) =>
-    workspaceId ? (s.workspaceStatuses[workspaceId] ?? { type: "ok" as const }) : null,
+    workspaceId ? (s.workspaceStatuses[workspaceId] ?? DEFAULT_WORKSPACE_STATUS) : null,
   );
 
   // rerender-derived-state: subscribe to derived booleans instead of the full
