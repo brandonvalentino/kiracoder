@@ -7,7 +7,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["KIRACODE_PORT", "VITE_KIRACODE_API_URL"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"],
