@@ -5,8 +5,9 @@
  * SPA fallback routing, and non-GET/HEAD rejections for non-tRPC routes.
  */
 
-import fs from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import type { Hono } from "hono";
 
@@ -45,45 +46,67 @@ function frontendBuildMissingHtml() {
 </html>`;
 }
 
-function createFileResponse(filePath: string) {
+function createStreamResponse(filePath: string) {
   const ext = path.extname(filePath);
-  return new Response(fs.readFileSync(filePath), {
+  const stream = Readable.toWeb(createReadStream(filePath)) as unknown as ReadableStream;
+
+  return new Response(stream, {
     headers: {
       "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
     },
   });
 }
 
+function isWithinDir(filePath: string, dirPath: string) {
+  return filePath === dirPath || filePath.startsWith(`${dirPath}${path.sep}`);
+}
+
 export function mountFrontend(app: Hono, options: FrontendMountOptions = {}) {
-  const distDir = options.distDir ?? frontendDistDir;
+  const distDir = path.resolve(options.distDir ?? frontendDistDir);
 
   app.all("*", (c) => {
     if (c.req.method !== "GET" && c.req.method !== "HEAD") {
       return c.text("Method Not Allowed", 405);
     }
 
-    if (!fs.existsSync(distDir)) {
+    if (!existsSync(distDir)) {
       return c.html(frontendBuildMissingHtml(), 200);
     }
 
     const requestPath = new URL(c.req.url).pathname;
     const safePath = requestPath === "/" ? "/index.html" : requestPath;
-    const filePath = path.join(distDir, safePath.replace(/^\//, ""));
+    const filePath = path.resolve(distDir, `.${safePath}`);
 
-    if (!filePath.startsWith(distDir)) {
+    if (!isWithinDir(filePath, distDir)) {
       return c.text("Forbidden", 403);
     }
 
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      return createFileResponse(filePath);
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      if (c.req.method === "HEAD") {
+        const ext = path.extname(filePath);
+        return new Response(null, {
+          headers: {
+            "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
+          },
+        });
+      }
+      return createStreamResponse(filePath);
     }
 
     const indexPath = path.join(distDir, "index.html");
-    if (!fs.existsSync(indexPath)) {
+    if (!existsSync(indexPath)) {
       return c.html(frontendBuildMissingHtml(), 200);
     }
 
-    return new Response(fs.readFileSync(indexPath), {
+    if (c.req.method === "HEAD") {
+      return new Response(null, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
+
+    return new Response(readFileSync(indexPath), {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
       },

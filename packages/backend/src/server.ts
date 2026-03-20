@@ -14,13 +14,17 @@ import { createAppContext, type AppContext } from "./context.ts";
 import { createHonoApp, type BackendAppOptions } from "./http/app.ts";
 import { TRPC_BASE_PATH } from "./http/trpc-mount.ts";
 
+export type BackendServerOptions = BackendAppOptions & {
+  context?: AppContext;
+};
+
 export function createBackendApp(context: AppContext, options: BackendAppOptions = {}) {
   return createHonoApp(context, options);
 }
 
-export function createBackendServer(options: BackendAppOptions = {}) {
-  const context = createAppContext();
-  const honoApp = createBackendApp(context, options);
+export function createBackendServer(options: BackendServerOptions = {}) {
+  const { context = createAppContext(), ...appOptions } = options;
+  const honoApp = createBackendApp(context, appOptions);
 
   let httpServer: Server | null = null;
 
@@ -68,7 +72,7 @@ export function createBackendServer(options: BackendAppOptions = {}) {
           resolve();
         });
       });
-      context.runtimeManager.disposeAll();
+      await Promise.resolve(context.runtimeManager.disposeAll());
     },
 
     /** Exposed for test introspection; prefer start/stop for lifecycle. */

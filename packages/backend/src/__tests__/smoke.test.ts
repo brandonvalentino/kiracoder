@@ -260,11 +260,22 @@ describe("backend smoke tests", () => {
       const response = await app.request("/not-an-api-route", { method: "POST" });
       expect(response.status).toBe(405);
     });
+
+    it("does not emit wildcard CORS headers for disallowed origins", async () => {
+      const app = createBackendApp(makeStubContext(), { distDir: tmpDir });
+      const response = await app.request("/", {
+        headers: {
+          Origin: "https://example.com",
+        },
+      });
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
   });
 
   describe("startup and shutdown lifecycle", () => {
     it("binds a port and serves requests", async () => {
-      const server = createBackendServer();
+      const server = createBackendServer({ context: makeStubContext() });
       const address = await server.start(0);
 
       expect(address.port).toBeGreaterThan(0);
@@ -279,7 +290,7 @@ describe("backend smoke tests", () => {
     });
 
     it("can stop before start without throwing", async () => {
-      const server = createBackendServer();
+      const server = createBackendServer({ context: makeStubContext() });
       await expect(server.stop()).resolves.not.toThrow();
     });
   });
