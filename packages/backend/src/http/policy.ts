@@ -10,6 +10,7 @@ import { cors } from "hono/cors";
 
 export function mountHttpPolicy(app: Hono) {
   app.use(
+    "*",
     cors({
       origin: (origin) => {
         if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {

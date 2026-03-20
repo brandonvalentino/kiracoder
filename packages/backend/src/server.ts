@@ -10,13 +10,17 @@
 
 import { serve } from "@hono/node-server";
 import type { Server } from "node:http";
-import { createAppContext } from "./context.ts";
-import { createHonoApp } from "./http/app.ts";
+import { createAppContext, type AppContext } from "./context.ts";
+import { createHonoApp, type BackendAppOptions } from "./http/app.ts";
 import { TRPC_BASE_PATH } from "./http/trpc-mount.ts";
 
-export function createBackendServer() {
+export function createBackendApp(context: AppContext, options: BackendAppOptions = {}) {
+  return createHonoApp(context, options);
+}
+
+export function createBackendServer(options: BackendAppOptions = {}) {
   const context = createAppContext();
-  const honoApp = createHonoApp(context);
+  const honoApp = createBackendApp(context, options);
 
   let httpServer: Server | null = null;
 

@@ -8,16 +8,18 @@
 import { Hono } from "hono";
 import { mountHttpPolicy } from "./policy.ts";
 import { mountTrpc } from "./trpc-mount.ts";
-import { mountFrontend } from "./frontend.ts";
+import { mountFrontend, type FrontendMountOptions } from "./frontend.ts";
 import { appRouter } from "../routers/index.ts";
 import type { AppContext } from "../context.ts";
 
-export function createHonoApp(context: AppContext) {
+export type BackendAppOptions = FrontendMountOptions;
+
+export function createHonoApp(context: AppContext, options: BackendAppOptions = {}) {
   const app = new Hono();
 
   mountHttpPolicy(app);
   mountTrpc(app, appRouter, context);
-  mountFrontend(app);
+  mountFrontend(app, options);
 
   return app;
 }

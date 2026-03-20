@@ -2,17 +2,29 @@
  * Frontend Asset Delivery
  *
  * Serves the built frontend, handles missing-build response, static assets,
- * and SPA fallback routing through Hono.
+ * SPA fallback routing, and non-GET/HEAD rejections for non-tRPC routes.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Hono } from "hono";
-import { serveStatic } from "@hono/node-server/serve-static";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const frontendDistDir = path.resolve(__dirname, "../../../frontend/dist");
+
+const mimeTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+};
+
+export type FrontendMountOptions = {
+  distDir?: string;
+};
 
 function frontendBuildMissingHtml() {
   return `<!doctype html>
@@ -33,25 +45,48 @@ function frontendBuildMissingHtml() {
 </html>`;
 }
 
-export function mountFrontend(app: Hono) {
-  // If the dist directory doesn't exist, show missing-build page for all GETs.
-  app.get("*", async (c, next) => {
-    if (!fs.existsSync(frontendDistDir)) {
+function createFileResponse(filePath: string) {
+  const ext = path.extname(filePath);
+  return new Response(fs.readFileSync(filePath), {
+    headers: {
+      "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
+    },
+  });
+}
+
+export function mountFrontend(app: Hono, options: FrontendMountOptions = {}) {
+  const distDir = options.distDir ?? frontendDistDir;
+
+  app.all("*", (c) => {
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+      return c.text("Method Not Allowed", 405);
+    }
+
+    if (!fs.existsSync(distDir)) {
       return c.html(frontendBuildMissingHtml(), 200);
     }
-    return next();
-  });
 
-  // Serve static files from frontend dist directory.
-  app.use("/*", serveStatic({ root: frontendDistDir }));
+    const requestPath = new URL(c.req.url).pathname;
+    const safePath = requestPath === "/" ? "/index.html" : requestPath;
+    const filePath = path.join(distDir, safePath.replace(/^\//, ""));
 
-  // SPA fallback: serve index.html for any unmatched GET route.
-  app.get("*", (c) => {
-    const indexPath = path.join(frontendDistDir, "index.html");
+    if (!filePath.startsWith(distDir)) {
+      return c.text("Forbidden", 403);
+    }
+
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return createFileResponse(filePath);
+    }
+
+    const indexPath = path.join(distDir, "index.html");
     if (!fs.existsSync(indexPath)) {
       return c.html(frontendBuildMissingHtml(), 200);
     }
-    const html = fs.readFileSync(indexPath, "utf-8");
-    return c.html(html, 200);
+
+    return new Response(fs.readFileSync(indexPath), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
   });
 }
