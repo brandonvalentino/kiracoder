@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.11",
-    "@kiracode/config": "*",
-    "@kiracode/db": "*",
-    "@kiracode/native": "*",
-    "@kiracode/session-runtime": "*",
+    "@kiracode/config": "workspace:*",
+    "@kiracode/db": "workspace:*",
+    "@kiracode/native": "workspace:*",
+    "@kiracode/session-runtime": "workspace:*",
     "@trpc/server": "^11.13.4",
     "hono": "^4.12.8",
     "zod": "^4.3.6"

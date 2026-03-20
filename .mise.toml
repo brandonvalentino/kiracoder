@@ -8,7 +8,7 @@
 node = "22"
 
 # Package manager version (from package.json packageManager field)
-npm = "11.6.2"
+pnpm = "10.8.1"
 
 # Task runner (installed globally for monorepo builds)
 # Version matches package.json devDependencies
@@ -22,8 +22,8 @@ KIRACODE_PORT = "3141"
 VITE_KIRACODE_API_URL = "http://127.0.0.1:3141/trpc"
 
 [tasks.install]
-description = "Install all npm dependencies"
-run = "npm install"
+description = "Install all dependencies"
+run = "pnpm install"
 
 [tasks.dev]
 description = "Start development servers (backend + frontend)"

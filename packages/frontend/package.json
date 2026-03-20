@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
-    "@kiracode/backend": "*",
+    "@kiracode/backend": "workspace:*",
     "@tanstack/react-router": "^1.133.7",
     "@trpc/client": "^11.6.0",
     "class-variance-authority": "^0.7.1",

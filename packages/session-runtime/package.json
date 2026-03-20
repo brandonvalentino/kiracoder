@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@kiracode/config": "*",
+    "@kiracode/config": "workspace:*",
     "@mariozechner/pi-coding-agent": "^0.60.0"
   }
 }
