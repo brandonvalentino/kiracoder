@@ -433,7 +433,7 @@ export function AppShell() {
       >
         {/* Sidebar header */}
         <div className="sidebar-header">
-          <span className="sidebar-brand">KiraCoder</span>
+          <span className="sidebar-brand">KiraCode</span>
           <div className="sidebar-header-actions">
             <button
               className={`icon-btn${refreshing ? " spinning" : ""}`}

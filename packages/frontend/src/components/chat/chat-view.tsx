@@ -35,7 +35,7 @@ function Welcome() {
       </div>
       <p>Welcome to KiraCode</p>
       <p className="hint">
-        Create a workspace and type a message to start chatting with your Pi-powered session.
+        Create a workspace and type a message to start chatting with Kira.
       </p>
       <div className="shortcuts-hint">
         <span>/ Focus input</span>
