@@ -14,8 +14,13 @@ const DEFAULT_WORKSPACE_STATUS: import("@/stores/app-store").WorkspaceStatus = {
 
 function Welcome() {
   return (
-    <div className="welcome">
-      <div className="welcome-icon">
+    /* welcome: centered empty-state */
+    <div
+      className="animate-[fadeIn_0.5s_var(--ease)] px-5 pb-10 pt-20 text-center"
+      style={{ color: "var(--text-dim)" }}
+    >
+      {/* welcome-icon */}
+      <div className="mb-4 flex justify-center text-[56px] opacity-25">
         <div
           style={{
             width: 64,
@@ -33,13 +38,41 @@ function Welcome() {
           K
         </div>
       </div>
-      <p>Welcome to KiraCode</p>
-      <p className="hint">
+      <p
+        className="mb-1 text-[16px] font-medium"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        Welcome to KiraCode
+      </p>
+      <p
+        className="text-[16px] font-normal"
+        style={{ color: "var(--text-dim)" }}
+      >
         Create a workspace and type a message to start chatting with Kira.
       </p>
-      <div className="shortcuts-hint">
-        <span>/ Focus input</span>
-        <span>Esc Abort</span>
+      {/* shortcuts-hint */}
+      <div
+        className="mt-5 flex justify-center gap-2.5 text-[11px]"
+        style={{ color: "var(--text-dim)" }}
+      >
+        <span
+          className="rounded-[var(--radius-md)] border px-2.5 py-1 font-mono"
+          style={{
+            background: "var(--bg-glass)",
+            borderColor: "var(--border)",
+          }}
+        >
+          / Focus input
+        </span>
+        <span
+          className="rounded-[var(--radius-md)] border px-2.5 py-1 font-mono"
+          style={{
+            background: "var(--bg-glass)",
+            borderColor: "var(--border)",
+          }}
+        >
+          Esc Abort
+        </span>
       </div>
     </div>
   );
@@ -55,8 +88,12 @@ function BrokenWorkspace({
   const canRecover = status.reason === "session_missing" || status.reason === "unknown";
 
   return (
-    <div className="welcome">
-      <div className="welcome-icon">
+    /* same welcome layout, error tinted */
+    <div
+      className="animate-[fadeIn_0.5s_var(--ease)] px-5 pb-10 pt-20 text-center"
+      style={{ color: "var(--text-dim)" }}
+    >
+      <div className="mb-4 flex justify-center text-[56px] opacity-25">
         <div
           style={{
             width: 64,
@@ -75,11 +112,14 @@ function BrokenWorkspace({
         </div>
       </div>
 
-      <p style={{ color: "var(--error)" }}>
+      <p style={{ color: "var(--error)" }} className="mb-1 text-[16px] font-medium">
         {status.reason === "not_found" ? "Workspace not found" : "Session unavailable"}
       </p>
 
-      <p className="hint">
+      <p
+        className="text-[16px] font-normal"
+        style={{ color: "var(--text-dim)" }}
+      >
         {status.reason === "not_found"
           ? "This workspace no longer exists in the database."
           : "The session file for this workspace is missing or could not be opened."}
@@ -199,10 +239,13 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
 
   if (!workspaceId) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}
-      >
-        <div className="messages" ref={messagesRef} style={{ paddingTop: 24, paddingBottom: 24 }}>
+      <div className="relative flex flex-1 flex-col" style={{ minHeight: 0 }}>
+        {/* messages scroll area */}
+        <div
+          className="flex flex-1 flex-col gap-1.5 overflow-y-auto scroll-smooth px-6 pt-6 pb-6"
+          ref={messagesRef}
+          style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border-hover) transparent" }}
+        >
           <Welcome />
         </div>
       </div>
@@ -212,10 +255,11 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   // Broken workspace — show recovery screen instead of message list.
   if (workspaceStatus?.type === "broken") {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}
-      >
-        <div className="messages" style={{ paddingTop: 24, paddingBottom: 24 }}>
+      <div className="relative flex flex-1 flex-col" style={{ minHeight: 0 }}>
+        <div
+          className="flex flex-1 flex-col gap-1.5 overflow-y-auto scroll-smooth px-6 pt-6 pb-6"
+          style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border-hover) transparent" }}
+        >
           <BrokenWorkspace status={workspaceStatus} onRecover={handleRecover} />
         </div>
       </div>
@@ -228,8 +272,13 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
   const liveToolExecutions = Object.values(toolExecutions);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}>
-      <div className="messages" ref={messagesRef}>
+    <div className="relative flex flex-1 flex-col" style={{ minHeight: 0 }}>
+      {/* messages scroll container — bottom-padding leaves room for the input overlay */}
+      <div
+        className="flex flex-1 flex-col gap-1.5 overflow-y-auto scroll-smooth px-6 pt-6 pb-[120px]"
+        ref={messagesRef}
+        style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border-hover) transparent" }}
+      >
         {messages.length === 0 && !isThisWorkspaceStreaming ? (
           <Welcome />
         ) : (
@@ -272,10 +321,18 @@ export function ChatView({ workspaceId }: { workspaceId: string | null }) {
         !streamingText &&
         !streamingThinking &&
         liveToolExecutions.length === 0 ? (
-          <div className="typing-indicator">
-            <div className="typing-dot" />
-            <div className="typing-dot" />
-            <div className="typing-dot" />
+          /* typing-indicator */
+          <div className="flex items-center gap-1 self-start px-1 pb-2">
+            {[0, 200, 400].map((delay, i) => (
+              <div
+                key={i}
+                className="h-[5px] w-[5px] rounded-full opacity-40 animate-[typingBounce_1.4s_infinite]"
+                style={{
+                  background: "var(--accent)",
+                  animationDelay: `${delay}ms`,
+                }}
+              />
+            ))}
           </div>
         ) : null}
       </div>

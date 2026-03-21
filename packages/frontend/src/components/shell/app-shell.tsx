@@ -222,6 +222,50 @@ function SidebarContextMenu({
   );
 }
 
+// ── Icon button (shared in sidebar header) ──────────────────────────
+function IconBtn({
+  children,
+  active,
+  spinning,
+  onClick,
+  title,
+}: {
+  children: React.ReactNode;
+  active?: boolean;
+  spinning?: boolean;
+  onClick?: () => void;
+  title?: string;
+}) {
+  return (
+    <button
+      className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border-none p-0 transition-all duration-[var(--duration)]${
+        spinning ? " animate-[spin_0.5s_ease]" : ""
+      }`}
+      style={{
+        background: active ? "var(--bg-glass-active)" : "transparent",
+        color: active ? "var(--text-secondary)" : "var(--text-dim)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-glass-hover)";
+        (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = active
+          ? "var(--bg-glass-active)"
+          : "transparent";
+        (e.currentTarget as HTMLButtonElement).style.color = active
+          ? "var(--text-secondary)"
+          : "var(--text-dim)";
+      }}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -275,11 +319,12 @@ export function AppShell() {
   const [workspacePath, setWorkspacePath] = useState("");
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
 
-  const indicatorClass = isStreaming
-    ? "status-indicator streaming"
+  // Derived status indicator class
+  const indicatorStatus = isStreaming
+    ? "streaming"
     : healthStatus === "ok"
-      ? "status-indicator connected"
-      : "status-indicator";
+      ? "connected"
+      : "disconnected";
 
   useEffect(() => {
     if (bootstrapped) return;
@@ -385,8 +430,17 @@ export function AppShell() {
     }
   }
 
+  // Sidebar input shared styles
+  const sidebarInputStyle: React.CSSProperties = {
+    background: "var(--bg-glass-strong)",
+    border: "1px solid var(--border)",
+    color: "var(--text-primary)",
+    fontFamily: "inherit",
+  };
+
   return (
-    <div className="app-layout">
+    /* app-layout: full-viewport flex row */
+    <div className="relative flex h-screen overflow-hidden" style={{ height: "100dvh" }}>
       <AlertDialog
         open={itemToDelete !== null}
         onOpenChange={(open) => {
@@ -425,44 +479,67 @@ export function AppShell() {
       )}
 
       {/* ── Left sidebar ─────────────────────────────── */}
+      {/* sidebar: fixed-width panel with frosted glass */}
       <div
         ref={sidebarRef}
-        className={`sidebar${sidebarOpen ? "" : " collapsed"}`}
+        className="relative z-[100] flex flex-col border-r transition-[margin-left] duration-300"
         id="sidebar"
+        style={{
+          width: "var(--sidebar-width)",
+          minWidth: "var(--sidebar-width)",
+          background: "var(--sidebar-bg)",
+          backdropFilter: "blur(var(--blur-heavy)) saturate(1.5)",
+          WebkitBackdropFilter: "blur(var(--blur-heavy)) saturate(1.5)",
+          borderColor: "var(--border)",
+          marginLeft: sidebarOpen ? 0 : "calc(var(--sidebar-width) * -1)",
+          // Mobile override applied via inline media
+        }}
         onContextMenu={handleSidebarContextMenu}
       >
-        {/* Sidebar header */}
-        <div className="sidebar-header">
-          <span className="sidebar-brand">KiraCode</span>
-          <div className="sidebar-header-actions">
-            <button
-              className={`icon-btn${refreshing ? " spinning" : ""}`}
+        {/* sidebar-header */}
+        <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-3.5">
+          {/* sidebar-brand */}
+          <span
+            className="text-[16px] font-bold tracking-[-0.01em] opacity-90"
+            style={{ color: "var(--text-primary)" }}
+          >
+            KiraCode
+          </span>
+          {/* sidebar-header-actions */}
+          <div className="flex gap-0.5">
+            <IconBtn
+              spinning={refreshing}
               onClick={() => void handleRefresh()}
               title="Refresh"
-              type="button"
             >
               <RefreshIcon />
-            </button>
-            <button
-              className={`icon-btn${showNewProject ? " active" : ""}`}
+            </IconBtn>
+            <IconBtn
+              active={showNewProject}
               onClick={() => {
                 setShowNewProject((v) => !v);
                 setNewWorkspaceForProject(null);
               }}
               title="New project"
-              type="button"
             >
               <PlusIcon size={13} />
-            </button>
+            </IconBtn>
           </div>
         </div>
 
         {/* New project form */}
         {showNewProject && (
-          <div className="sidebar-create-form">
+          <div
+            className="flex shrink-0 flex-col gap-1.5 border-b px-3 pb-3 pt-2.5"
+            style={{
+              background: "var(--bg-glass)",
+              borderColor: "var(--border)",
+            }}
+          >
             <input
               ref={newProjectInputRef}
-              className="sidebar-input"
+              className="w-full rounded-[var(--radius-md)] px-2.5 py-[7px] text-[12px] outline-none transition-all placeholder:text-[var(--text-dim)] focus:border-[var(--border-hover)] focus:bg-[var(--bg-glass-hover)]"
+              style={sidebarInputStyle}
               onChange={(e) => setProjectName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void handleCreateProject();
@@ -475,7 +552,13 @@ export function AppShell() {
               value={projectName}
             />
             <button
-              className="sidebar-create-btn"
+              className="self-end cursor-pointer rounded-[var(--radius-md)] border px-3 py-[5px] text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-35"
+              style={{
+                background: "var(--bg-glass-active)",
+                borderColor: "var(--border-hover)",
+                color: "var(--text-secondary)",
+                fontFamily: "inherit",
+              }}
               disabled={!projectName.trim()}
               onClick={() => void handleCreateProject()}
               type="button"
@@ -485,15 +568,23 @@ export function AppShell() {
           </div>
         )}
 
-        {/* Project / workspace list */}
-        <div className="session-list">
+        {/* session-list: scrollable project/workspace tree */}
+        <div
+          className="flex-1 overflow-y-auto py-2 pb-4"
+          style={{ scrollbarWidth: "none" }}
+        >
           {projects.length === 0 ? (
-            <div className="session-empty">
+            /* session-empty */
+            <div
+              className="flex flex-col items-center gap-2.5 px-5 py-10 text-center text-[12px]"
+              style={{ color: "var(--text-dim)" }}
+            >
               {bootstrapped ? (
                 <>
                   <span>No projects yet.</span>
                   <button
-                    className="session-empty-cta"
+                    className="cursor-pointer border-none bg-none p-0 text-[12px] transition-colors hover:text-[var(--text-primary)]"
+                    style={{ background: "none", color: "var(--text-secondary)", fontFamily: "inherit" }}
                     onClick={() => setShowNewProject(true)}
                     type="button"
                   >
@@ -512,10 +603,11 @@ export function AppShell() {
               const isAddingWorkspace = newWorkspaceForProject === project.id;
 
               return (
-                <div className="project-group" key={project.id}>
-                  {/* Project header row */}
+                /* project-group */
+                <div className="mb-1" key={project.id}>
+                  {/* project-header */}
                   <div
-                    className={`project-header${isActive ? " active" : ""}`}
+                    className="group relative mx-1.5 flex cursor-pointer select-none items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 transition-colors hover:bg-[var(--bg-glass)]"
                     data-ctx-project={project.id}
                     data-ctx-name={project.name}
                     onClick={async () => {
@@ -531,13 +623,35 @@ export function AppShell() {
                       if (e.key === "Enter") toggleProject(project.id);
                     }}
                   >
-                    <span className="project-chevron">
+                    {/* project-chevron */}
+                    <span
+                      className="flex shrink-0 items-center opacity-50"
+                      style={{ color: "var(--text-dim)" }}
+                    >
                       <ChevronIcon expanded={!isCollapsed} />
                     </span>
-                    <span className="project-name">{project.name}</span>
-                    <span className="project-count">{workspaces.length}</span>
+                    {/* project-name */}
+                    <span
+                      className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-semibold"
+                      style={{ color: isActive ? "var(--text-primary)" : "var(--text-secondary)" }}
+                    >
+                      {project.name}
+                    </span>
+                    {/* project-count */}
+                    <span
+                      className="shrink-0 rounded-[10px] border px-1.5 py-px text-[10px] font-medium leading-[1.4] transition-opacity group-hover:opacity-0 group-hover:pointer-events-none"
+                      style={{
+                        color: "var(--text-dim)",
+                        background: "var(--bg-glass)",
+                        borderColor: "var(--border)",
+                      }}
+                    >
+                      {workspaces.length}
+                    </span>
+                    {/* project-add-btn */}
                     <button
-                      className="project-add-btn"
+                      className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-[var(--radius-xs)] border-none bg-transparent p-0 opacity-0 transition-all group-hover:opacity-100 hover:!bg-[var(--bg-glass-hover)] hover:!text-[var(--text-secondary)] hover:!opacity-100"
+                      style={{ color: "var(--text-dim)" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         selectProject(project.id);
@@ -560,38 +674,49 @@ export function AppShell() {
 
                   {/* Workspace list + optional new-workspace form */}
                   {!isCollapsed && (
-                    <div className="project-sessions">
+                    /* project-sessions */
+                    <div className="flex flex-col gap-px pt-0.5">
                       {isAddingWorkspace && (
-                        <div className="sidebar-create-form workspace-create-form">
+                        /* workspace-create-form */
+                        <div
+                          className="flex flex-col gap-1.5 border-t px-3 pb-2.5 pt-2 pl-6"
+                          style={{
+                            background: "rgba(255,255,255,0.02)",
+                            borderColor: "var(--border)",
+                            marginBottom: 2,
+                          }}
+                        >
                           <input
                             ref={newWorkspaceInputRef}
-                            className="sidebar-input"
+                            className="w-full rounded-[var(--radius-md)] px-2.5 py-[7px] text-[12px] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                            style={sidebarInputStyle}
                             onChange={(e) => setWorkspaceName(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter")
-                                void handleCreateWorkspace();
-                              if (e.key === "Escape") {
-                                setNewWorkspaceForProject(null);
-                              }
+                              if (e.key === "Enter") void handleCreateWorkspace();
+                              if (e.key === "Escape") setNewWorkspaceForProject(null);
                             }}
                             placeholder="Workspace name…"
                             value={workspaceName}
                           />
                           <input
-                            className="sidebar-input"
+                            className="w-full rounded-[var(--radius-md)] px-2.5 py-[7px] text-[12px] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                            style={sidebarInputStyle}
                             onChange={(e) => setWorkspacePath(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter")
-                                void handleCreateWorkspace();
-                              if (e.key === "Escape") {
-                                setNewWorkspaceForProject(null);
-                              }
+                              if (e.key === "Enter") void handleCreateWorkspace();
+                              if (e.key === "Escape") setNewWorkspaceForProject(null);
                             }}
                             placeholder="Folder path (optional)"
                             value={workspacePath}
                           />
                           <button
-                            className="sidebar-create-btn"
+                            className="self-end cursor-pointer rounded-[var(--radius-md)] border px-3 py-[5px] text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-35"
+                            style={{
+                              background: "var(--bg-glass-active)",
+                              borderColor: "var(--border-hover)",
+                              color: "var(--text-secondary)",
+                              fontFamily: "inherit",
+                            }}
                             disabled={!workspaceName.trim()}
                             onClick={() => void handleCreateWorkspace()}
                             type="button"
@@ -602,20 +727,29 @@ export function AppShell() {
                       )}
 
                       {workspaces.length === 0 && !isAddingWorkspace ? (
-                        <div className="workspace-empty">No workspaces</div>
+                        /* workspace-empty */
+                        <div
+                          className="px-3 py-1.5 pl-[26px] text-[11px]"
+                          style={{ color: "var(--text-dim)" }}
+                        >
+                          No workspaces
+                        </div>
                       ) : null}
 
                       {workspaces.map((workspace) => {
                         const isWsActive = workspace.id === activeWorkspaceId;
                         const wsStatus =
-                          useAppStore.getState().workspaceStatuses[
-                            workspace.id
-                          ];
+                          useAppStore.getState().workspaceStatuses[workspace.id];
                         const isBroken = wsStatus?.type === "broken";
                         return (
+                          /* session-item */
                           <Link
                             key={workspace.id}
-                            className={`session-item${isWsActive ? " active" : ""}`}
+                            className="mx-1.5 flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-3 py-[7px] pl-[26px] no-underline transition-all hover:bg-[var(--bg-glass)]"
+                            style={{
+                              color: "inherit",
+                              background: isWsActive ? "var(--bg-glass-active)" : undefined,
+                            }}
                             data-ctx-workspace={workspace.id}
                             data-ctx-projectid={project.id}
                             onClick={() => selectWorkspace(workspace.id)}
@@ -623,13 +757,17 @@ export function AppShell() {
                             title={workspace.cwd || undefined}
                             to="/workspaces/$workspaceId"
                           >
+                            {/* session-icon */}
                             <span
-                              className="session-icon"
-                              style={
-                                isBroken
-                                  ? { color: "var(--error)" }
-                                  : undefined
-                              }
+                              className="flex shrink-0 items-center"
+                              style={{
+                                color: isBroken
+                                  ? "var(--error)"
+                                  : isWsActive
+                                    ? "var(--accent-text)"
+                                    : "var(--text-dim)",
+                                opacity: isWsActive && !isBroken ? 0.7 : 1,
+                              }}
                             >
                               {isBroken ? (
                                 <svg
@@ -662,17 +800,19 @@ export function AppShell() {
                                 <FolderIcon />
                               )}
                             </span>
-                            <div className="session-info">
+                            {/* session-info */}
+                            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                              {/* session-title */}
                               <span
-                                className="session-title"
-                                style={
-                                  isBroken
-                                    ? {
-                                        color: "var(--error)",
-                                        opacity: 0.8,
-                                      }
-                                    : undefined
-                                }
+                                className="overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-medium"
+                                style={{
+                                  color: isBroken
+                                    ? "var(--error)"
+                                    : isWsActive
+                                      ? "var(--text-primary)"
+                                      : "var(--text-secondary)",
+                                  opacity: isBroken ? 0.8 : 1,
+                                }}
                               >
                                 {workspace.name}
                               </span>
@@ -689,20 +829,41 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — hidden on desktop */}
       <div
-        className={`sidebar-overlay${!sidebarOpen ? " visible" : ""}`}
+        className="fixed inset-0 z-[99] hidden"
         id="sidebar-overlay"
+        style={{
+          background: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(8px)",
+          // shown on mobile when sidebar is open
+          display: !sidebarOpen ? "block" : "none",
+          opacity: !sidebarOpen ? 1 : 0,
+          pointerEvents: !sidebarOpen ? "auto" : "none",
+        }}
         onClick={() => setSidebarOpen(true)}
       />
 
       {/* ── Main area ──────────────────────────────── */}
-      <div className="main">
-        <div className="header">
-          <div className="header-left">
+      {/* main: flex column, fills remaining space */}
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* header: frosted top bar */}
+        <div
+          className="z-10 flex min-h-11 shrink-0 items-center justify-between border-b px-4 py-2"
+          style={{
+            background: "var(--header-bg)",
+            backdropFilter: "blur(40px) saturate(1.5)",
+            WebkitBackdropFilter: "blur(40px) saturate(1.5)",
+            borderColor: "var(--border)",
+          }}
+        >
+          {/* header-left */}
+          <div className="flex items-center gap-2.5">
+            {/* sidebar-toggle */}
             <button
-              className="sidebar-toggle"
+              className="flex cursor-pointer items-center justify-center rounded-[var(--radius-md)] border-none bg-transparent p-1.5 transition-all hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
               id="sidebar-toggle"
+              style={{ color: "var(--text-secondary)" }}
               onClick={() => setSidebarOpen((v) => !v)}
               title="Toggle sidebar"
               type="button"
@@ -710,29 +871,53 @@ export function AppShell() {
               <MenuIcon />
             </button>
 
-            <div className="status">
-              <span className={indicatorClass} id="status-indicator" />
-              <span className="status-text" id="status-text">
+            {/* status indicator */}
+            <div
+              className="flex items-center gap-1.5 text-[11px]"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {/* status-indicator dot */}
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-400${
+                  indicatorStatus === "streaming"
+                    ? " animate-[pulse_1.5s_infinite]"
+                    : indicatorStatus === "connected"
+                      ? " animate-[connectPop_0.4s_var(--spring)]"
+                      : ""
+                }`}
+                id="status-indicator"
+                style={{
+                  background:
+                    indicatorStatus === "connected"
+                      ? "var(--success)"
+                      : indicatorStatus === "streaming"
+                        ? "var(--accent)"
+                        : indicatorStatus === "disconnected"
+                          ? "var(--error)"
+                          : "var(--text-dim)",
+                  boxShadow:
+                    indicatorStatus === "connected"
+                      ? "0 0 8px rgba(52, 211, 153, 0.5)"
+                      : indicatorStatus === "streaming"
+                        ? "0 0 12px var(--accent-glow)"
+                        : indicatorStatus === "disconnected"
+                          ? "0 0 8px rgba(248, 113, 113, 0.4)"
+                          : "none",
+                }}
+              />
+              <span id="status-text">
                 {isStreaming ? "Working…" : statusText}
               </span>
             </div>
           </div>
 
-          <div className="header-right">
-            <div
-              className="pill"
-              style={{
-                fontSize: 10,
-                fontFamily: "monospace",
-                color: "var(--text-dim)",
-                display: pathname.startsWith("/workspaces/") ? "none" : "none",
-              }}
-            >
-              {pathname}
-            </div>
+          {/* header-right */}
+          <div className="flex items-center gap-2.5">
+            {/* settings-btn */}
             <button
-              className="settings-btn"
+              className="flex cursor-pointer items-center justify-center rounded-[var(--radius-md)] border-none bg-transparent p-1.5 transition-all hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
               id="settings-btn"
+              style={{ color: "var(--text-secondary)" }}
               title="Settings"
               type="button"
             >
