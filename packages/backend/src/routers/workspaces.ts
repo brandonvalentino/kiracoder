@@ -112,4 +112,16 @@ export const workspacesRouter = createRouter({
     .mutation(async ({ ctx, input }) => {
       return wrapWorkspace(() => ctx.workspaceService.resetWorkspaceSession(input.workspaceId));
     }),
+
+  delete: publicProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const workspace = await ctx.workspaceService.deleteWorkspace(input.workspaceId);
+      if (!workspace) throw new TRPCError({ code: "NOT_FOUND", message: "Workspace not found" });
+      return workspace;
+    }),
 });

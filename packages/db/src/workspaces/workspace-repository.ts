@@ -68,5 +68,15 @@ export function createWorkspaceRepository(db: Database): WorkspaceRepository {
 
       return workspace;
     },
+    async delete(workspaceId) {
+      const workspace = await this.getById(workspaceId);
+      if (!workspace) return undefined;
+      
+      await db.client.execute({
+        sql: "DELETE FROM workspaces WHERE id = ?",
+        args: [workspaceId],
+      });
+      return workspace;
+    },
   } satisfies WorkspaceRepository;
 }

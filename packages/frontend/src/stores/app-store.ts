@@ -107,6 +107,8 @@ type AppStore = {
     name: string;
     projectId: string;
   }) => Promise<{ runtime: RuntimeSummary; workspace: Workspace }>;
+  deleteProject: (projectId: string) => Promise<void>;
+  deleteWorkspace: (workspaceId: string, projectId: string) => Promise<void>;
   promptWorkspace: (workspaceId: string, message: string) => Promise<void>;
   /**
    * Create a fresh Pi session for a broken workspace and clear its error
@@ -235,6 +237,40 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     await get().loadMessages(result.workspace.id);
     // Subscription ownership stays with the route; navigate there after create.
     return result;
+  },
+
+  async deleteProject(projectId) {
+    await client.projects.delete.mutate({ id: projectId });
+    set((state) => {
+      const projects = state.projects.filter((p) => p.id !== projectId);
+      const workspacesByProject = { ...state.workspacesByProject };
+      delete workspacesByProject[projectId];
+      
+      return {
+        activeProjectId: state.activeProjectId === projectId ? null : state.activeProjectId,
+        activeWorkspaceId: state.activeProjectId === projectId ? null : state.activeWorkspaceId,
+        projects,
+        workspacesByProject,
+      };
+    });
+  },
+
+  async deleteWorkspace(workspaceId, projectId) {
+    await client.workspaces.delete.mutate({ workspaceId });
+    set((state) => {
+      const projectWorkspaces = state.workspacesByProject[projectId] ?? [];
+      const updatedWorkspaces = projectWorkspaces.filter((w) => w.id !== workspaceId);
+      
+      const workspacesByProject = {
+        ...state.workspacesByProject,
+        [projectId]: updatedWorkspaces,
+      };
+      
+      return {
+        activeWorkspaceId: state.activeWorkspaceId === workspaceId ? null : state.activeWorkspaceId,
+        workspacesByProject,
+      };
+    });
   },
 
   async promptWorkspace(workspaceId, message) {

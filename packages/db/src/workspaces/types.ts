@@ -13,4 +13,5 @@ export type WorkspaceRepository = {
   getById: (workspaceId: string) => Promise<WorkspaceRecord | null>;
   listByProject: (projectId: string) => Promise<WorkspaceRecord[]>;
   updateSessionFile: (workspaceId: string, sessionFile: string) => Promise<WorkspaceRecord>;
+  delete: (workspaceId: string) => Promise<WorkspaceRecord | undefined>;
 };

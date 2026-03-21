@@ -1,4 +1,4 @@
-import { createProject, getProject, listProjects } from "@kiracode/db";
+import { createProject, deleteProject, getProject, listProjects } from "@kiracode/db";
 import type { CreateProjectServiceDeps, ProjectService } from "./types.ts";
 
 export function createProjectService(deps: CreateProjectServiceDeps): ProjectService {
@@ -10,6 +10,9 @@ export function createProjectService(deps: CreateProjectServiceDeps): ProjectSer
         id: deps.createId(),
         name: trimmedName,
       });
+    },
+    async deleteProject(projectId) {
+      return deleteProject(deps.db, projectId);
     },
     async getProject(projectId) {
       return getProject(deps.db, projectId);

@@ -31,6 +31,7 @@ export type WorkspaceService = {
     workspaceId: string,
     signal?: AbortSignal,
   ) => AsyncIterable<WorkspaceRuntimeEvent>;
+  deleteWorkspace: (workspaceId: string) => Promise<WorkspaceRecord | undefined>;
 };
 
 export type CreateWorkspaceServiceDeps = {

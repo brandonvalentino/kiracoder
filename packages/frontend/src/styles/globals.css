@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/dm-sans";
+
+@custom-variant dark (&:is(.dark *));
 
 /* Allow Tailwind to scan Streamdown's dist for utility classes */
 @source "../../node_modules/streamdown/dist/*.js";
@@ -77,6 +81,37 @@
   /* Typography */
   --font-sans: "DM Sans Variable", "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "SF Mono", "Menlo", "Monaco", monospace;
+
+  /* shadcn design tokens — mapped to KiraCode dark theme */
+  --background: var(--bg-solid);
+  --foreground: var(--text-primary);
+  --card: rgba(255, 255, 255, 0.03);
+  --card-foreground: var(--text-primary);
+  --popover: var(--sidebar-bg);
+  --popover-foreground: var(--text-primary);
+  --primary: #a0a0a0;
+  --primary-foreground: #212121;
+  --secondary: rgba(255, 255, 255, 0.06);
+  --secondary-foreground: var(--text-primary);
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: var(--text-secondary);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--error);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: rgba(255, 255, 255, 0.2);
+  --chart-1: #34d399;
+  --chart-2: #fbbf24;
+  --chart-3: #f87171;
+  --chart-4: #a0a0a0;
+  --chart-5: #c0c0c0;
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: #a0a0a0;
+  --sidebar-primary-foreground: #212121;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border);
+  --sidebar-ring: rgba(255, 255, 255, 0.2);
 }
 
 /* Tailwind theme bridge */
@@ -86,12 +121,50 @@
   --color-border: var(--border);
   --color-muted: var(--bg-glass);
   --color-muted-foreground: var(--text-secondary);
+  --color-popover: var(--sidebar-bg);
+  --color-popover-foreground: var(--text-primary);
+  --color-destructive: var(--error);
+  --color-destructive-foreground: #fff;
+  --color-accent: var(--bg-glass-hover);
+  --color-accent-foreground: var(--text-primary);
   /* Streamdown uses bg-sidebar for code block containers */
   --color-sidebar: var(--sidebar-bg);
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius);
   --radius-xl: var(--radius-lg);
+
+  --animate-in: animate-in 0.2s var(--ease);
+  --animate-out: animate-out 0.2s var(--ease);
+  --font-heading: var(--font-sans);
+  --font-sans: 'DM Sans Variable', sans-serif;
+
+  /* shadcn → Tailwind color bridge */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Extended radii for shadcn components */
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
 }
 
 /* ═══════════════════════════════════════════════════════

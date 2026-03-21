@@ -1,7 +1,22 @@
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  Link,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/stores/app-store";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function RefreshIcon() {
   return (
@@ -110,6 +125,103 @@ function FolderIcon() {
   );
 }
 
+// ── Custom context menu ─────────────────────────────────────────────
+// Radix ContextMenu has fundamental limitations: each Root is fully
+// uncontrolled (no `open` prop) and independent instances can't
+// coordinate to enforce "one menu at a time".  Instead of fighting
+// Radix, we implement a lightweight custom context menu that gives us
+// full control over positioning, open state, and dismiss behavior.
+
+type ContextTarget =
+  | { type: "project"; projectId: string; projectName: string }
+  | { type: "workspace"; workspaceId: string; projectId: string };
+
+function SidebarContextMenu({
+  target,
+  position,
+  onClose,
+  onDeleteProject,
+  onDeleteWorkspace,
+}: {
+  target: ContextTarget;
+  position: { x: number; y: number };
+  onClose: () => void;
+  onDeleteProject: (id: string, name: string) => void;
+  onDeleteWorkspace: (workspaceId: string, projectId: string) => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click or blur
+  useEffect(() => {
+    function handlePointerDown(e: PointerEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    function handleScroll() {
+      onClose();
+    }
+    // Use a microtask so the menu doesn't immediately close from the
+    // same pointerdown that triggered the contextmenu event.
+    queueMicrotask(() => {
+      document.addEventListener("pointerdown", handlePointerDown);
+    });
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("blur", onClose);
+    window.addEventListener("resize", onClose);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("blur", onClose);
+      window.removeEventListener("resize", onClose);
+    };
+  }, [onClose]);
+
+  // Adjust position to avoid going off-screen
+  const style: React.CSSProperties = {
+    position: "fixed",
+    left: position.x,
+    top: position.y,
+    zIndex: 300,
+  };
+
+  return (
+    <div
+      ref={menuRef}
+      className="min-w-48 overflow-hidden rounded-2xl bg-popover p-1 text-popover-foreground shadow-2xl ring-1 ring-foreground/5 animate-in fade-in-0 zoom-in-95"
+      style={style}
+    >
+      {target.type === "project" && (
+        <button
+          className="relative flex w-full cursor-default items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-destructive outline-hidden select-none hover:bg-destructive/10 focus:bg-destructive/10"
+          onClick={() => {
+            onDeleteProject(target.projectId, target.projectName);
+            onClose();
+          }}
+        >
+          Delete Project
+        </button>
+      )}
+      {target.type === "workspace" && (
+        <button
+          className="relative flex w-full cursor-default items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-destructive outline-hidden select-none hover:bg-destructive/10 focus:bg-destructive/10"
+          onClick={() => {
+            onDeleteWorkspace(target.workspaceId, target.projectId);
+            onClose();
+          }}
+        >
+          Delete Workspace
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -125,21 +237,40 @@ export function AppShell() {
 
   const loadWorkspaces = useAppStore((s) => s.loadWorkspaces);
   const createProject = useAppStore((s) => s.createProject);
+  const deleteProject = useAppStore((s) => s.deleteProject);
   const createWorkspace = useAppStore((s) => s.createWorkspace);
+  const deleteWorkspace = useAppStore((s) => s.deleteWorkspace);
   const selectProject = useAppStore((s) => s.selectProject);
   const selectWorkspace = useAppStore((s) => s.selectWorkspace);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(
+    new Set(),
+  );
   const [refreshing, setRefreshing] = useState(false);
+
+  // Alert dialog state
+  const [itemToDelete, setItemToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  // Custom context menu state
+  const [ctxMenu, setCtxMenu] = useState<{
+    target: ContextTarget;
+    position: { x: number; y: number };
+  } | null>(null);
 
   // New project form
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectName, setProjectName] = useState("");
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const newProjectInputRef = useRef<HTMLInputElement>(null);
 
-  // New workspace form — keyed by project id
-  const [newWorkspaceForProject, setNewWorkspaceForProject] = useState<string | null>(null);
+  // New workspace form
+  const [newWorkspaceForProject, setNewWorkspaceForProject] = useState<
+    string | null
+  >(null);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspacePath, setWorkspacePath] = useState("");
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
@@ -208,10 +339,98 @@ export function AppShell() {
     });
   }
 
+  async function handleDeleteProjectConfirm() {
+    if (!itemToDelete) return;
+    const snapshot = itemToDelete;
+    setItemToDelete(null);
+    await deleteProject(snapshot.id);
+    if (activeProjectId === snapshot.id) {
+      navigate({ to: "/" });
+    }
+  }
+
+  function handleDeleteWorkspaceDirect(workspaceId: string, projectId: string) {
+    void deleteWorkspace(workspaceId, projectId).then(() => {
+      if (activeWorkspaceId === workspaceId) void navigate({ to: "/" });
+    });
+  }
+
+  // Handle right-click on sidebar items via native contextmenu event
+  function handleSidebarContextMenu(e: React.MouseEvent) {
+    const el = (e.target as HTMLElement).closest<HTMLElement>(
+      "[data-ctx-project], [data-ctx-workspace]",
+    );
+    if (!el) return; // Right-clicked empty area — use browser default
+
+    e.preventDefault();
+
+    if (el.dataset.ctxProject) {
+      setCtxMenu({
+        target: {
+          type: "project",
+          projectId: el.dataset.ctxProject,
+          projectName: el.dataset.ctxName ?? "",
+        },
+        position: { x: e.clientX, y: e.clientY },
+      });
+    } else if (el.dataset.ctxWorkspace) {
+      setCtxMenu({
+        target: {
+          type: "workspace",
+          workspaceId: el.dataset.ctxWorkspace,
+          projectId: el.dataset.ctxProjectid ?? "",
+        },
+        position: { x: e.clientX, y: e.clientY },
+      });
+    }
+  }
+
   return (
     <div className="app-layout">
+      <AlertDialog
+        open={itemToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setItemToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <strong>{itemToDelete?.name}</strong>? All workspaces inside it
+              will also be deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void handleDeleteProjectConfirm()}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Custom context menu — rendered as a portal-like fixed element */}
+      {ctxMenu && (
+        <SidebarContextMenu
+          target={ctxMenu.target}
+          position={ctxMenu.position}
+          onClose={() => setCtxMenu(null)}
+          onDeleteProject={(id, name) => setItemToDelete({ id, name })}
+          onDeleteWorkspace={handleDeleteWorkspaceDirect}
+        />
+      )}
+
       {/* ── Left sidebar ─────────────────────────────── */}
-      <div className={`sidebar${sidebarOpen ? "" : " collapsed"}`} id="sidebar">
+      <div
+        ref={sidebarRef}
+        className={`sidebar${sidebarOpen ? "" : " collapsed"}`}
+        id="sidebar"
+        onContextMenu={handleSidebarContextMenu}
+      >
         {/* Sidebar header */}
         <div className="sidebar-header">
           <span className="sidebar-brand">KiraCoder</span>
@@ -297,6 +516,8 @@ export function AppShell() {
                   {/* Project header row */}
                   <div
                     className={`project-header${isActive ? " active" : ""}`}
+                    data-ctx-project={project.id}
+                    data-ctx-name={project.name}
                     onClick={async () => {
                       selectProject(project.id);
                       if (!workspacesByProject[project.id]) {
@@ -320,8 +541,11 @@ export function AppShell() {
                       onClick={(e) => {
                         e.stopPropagation();
                         selectProject(project.id);
-                        if (!workspacesByProject[project.id]) void loadWorkspaces(project.id);
-                        setNewWorkspaceForProject(isAddingWorkspace ? null : project.id);
+                        if (!workspacesByProject[project.id])
+                          void loadWorkspaces(project.id);
+                        setNewWorkspaceForProject(
+                          isAddingWorkspace ? null : project.id,
+                        );
                         setWorkspaceName("");
                         setWorkspacePath("");
                         setShowNewProject(false);
@@ -337,7 +561,6 @@ export function AppShell() {
                   {/* Workspace list + optional new-workspace form */}
                   {!isCollapsed && (
                     <div className="project-sessions">
-                      {/* New workspace form */}
                       {isAddingWorkspace && (
                         <div className="sidebar-create-form workspace-create-form">
                           <input
@@ -345,7 +568,8 @@ export function AppShell() {
                             className="sidebar-input"
                             onChange={(e) => setWorkspaceName(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleCreateWorkspace();
+                              if (e.key === "Enter")
+                                void handleCreateWorkspace();
                               if (e.key === "Escape") {
                                 setNewWorkspaceForProject(null);
                               }
@@ -357,7 +581,8 @@ export function AppShell() {
                             className="sidebar-input"
                             onChange={(e) => setWorkspacePath(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleCreateWorkspace();
+                              if (e.key === "Enter")
+                                void handleCreateWorkspace();
                               if (e.key === "Escape") {
                                 setNewWorkspaceForProject(null);
                               }
@@ -382,12 +607,17 @@ export function AppShell() {
 
                       {workspaces.map((workspace) => {
                         const isWsActive = workspace.id === activeWorkspaceId;
-                        const wsStatus = useAppStore.getState().workspaceStatuses[workspace.id];
+                        const wsStatus =
+                          useAppStore.getState().workspaceStatuses[
+                            workspace.id
+                          ];
                         const isBroken = wsStatus?.type === "broken";
                         return (
                           <Link
-                            className={`session-item${isWsActive ? " active" : ""}`}
                             key={workspace.id}
+                            className={`session-item${isWsActive ? " active" : ""}`}
+                            data-ctx-workspace={workspace.id}
+                            data-ctx-projectid={project.id}
                             onClick={() => selectWorkspace(workspace.id)}
                             params={{ workspaceId: workspace.id }}
                             title={workspace.cwd || undefined}
@@ -395,11 +625,19 @@ export function AppShell() {
                           >
                             <span
                               className="session-icon"
-                              style={isBroken ? { color: "var(--error)" } : undefined}
+                              style={
+                                isBroken
+                                  ? { color: "var(--error)" }
+                                  : undefined
+                              }
                             >
                               {isBroken ? (
-                                // Small warning triangle replaces the folder icon
-                                <svg fill="currentColor" height="12" viewBox="0 0 24 24" width="12">
+                                <svg
+                                  fill="currentColor"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  width="12"
+                                >
                                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                                   <line
                                     stroke="white"
@@ -428,7 +666,12 @@ export function AppShell() {
                               <span
                                 className="session-title"
                                 style={
-                                  isBroken ? { color: "var(--error)", opacity: 0.8 } : undefined
+                                  isBroken
+                                    ? {
+                                        color: "var(--error)",
+                                        opacity: 0.8,
+                                      }
+                                    : undefined
                                 }
                               >
                                 {workspace.name}
@@ -487,7 +730,12 @@ export function AppShell() {
             >
               {pathname}
             </div>
-            <button className="settings-btn" id="settings-btn" title="Settings" type="button">
+            <button
+              className="settings-btn"
+              id="settings-btn"
+              title="Settings"
+              type="button"
+            >
               <SettingsIcon />
             </button>
           </div>

@@ -85,6 +85,11 @@ export function createWorkspaceService(deps: CreateWorkspaceServiceDeps): Worksp
       );
     },
 
+    async deleteWorkspace(workspaceId) {
+      deps.runtimeManager.disposeWorkspaceRuntime(workspaceId);
+      return deps.repository.delete(workspaceId);
+    },
+
     async *subscribeToWorkspaceEvents(workspaceId, signal) {
       await requireWorkspace(workspaceId);
       yield* deps.runtimeManager.subscribeToWorkspaceEvents(workspaceId, signal);
